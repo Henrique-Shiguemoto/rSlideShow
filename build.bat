@@ -3,7 +3,7 @@
 :: Set up directories
 set SRC_DIR=src
 set BIN_DIR=bin
-set OUTPUT_EXE=main.exe
+set OUTPUT_EXE=rslideshow.exe
 set COMPILER_FLAGS=-Wall -Wextra -pedantic -g -std=c11 -Wno-unused-parameter -Wno-unused-variable
 
 :: Create the BIN directory if it doesn't exist

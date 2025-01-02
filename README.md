@@ -1,27 +1,24 @@
 # rSlideShow
 
-Short description...
+This is a desktop program which renders slideshows.
 
 ## Features
 
-- Feature 1
-
-- Feature 2
+- Renders text and images
+- Rescalable text and images
 
 ## How to use
 
-- Step 1
-
-- Step 2
+- <code>git clone</code> this repo
+- Run the command <code>build</code>
+- Run the <code>bin/rslideshow.exe</code>
 
 ## Prerequisites
 
-- Prerequisite 1
-
-- Prerequisite 2
+- SDL2 DLL in the root directory
 
 ## Technologies Used
 
-- Technology 1
-
-- Technology 2
+- C11
+- SDL2
+- OpenGL
