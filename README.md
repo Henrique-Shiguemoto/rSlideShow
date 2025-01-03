@@ -13,10 +13,6 @@ This is a desktop program which renders slideshows.
 - Run the command <code>build</code>
 - Run the <code>bin/rslideshow.exe</code>
 
-## Prerequisites
-
-- SDL2 DLL in the root directory
-
 ## Technologies Used
 
 - C11
