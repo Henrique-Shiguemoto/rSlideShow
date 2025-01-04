@@ -1,3 +1,5 @@
+// TODO(Rick): create main.h with #define's and #include's like this and stuff
+
 #include <stdio.h>
 
 #define SDL_MAIN_HANDLED
@@ -13,7 +15,10 @@ SDL_Window* g_window = NULL;
 SDL_GLContext g_context = NULL;
 int g_should_quit = 0;
 
+// TODO(Rick): refactor printfs into rLogger functions
+
 int main(void){
+	// TODO(Rick): refactor init into function
 	if(SDL_Init(SDL_INIT_VIDEO) != 0){
 		printf("Error SDL_Init(): %s\n", SDL_GetError());
 		return -1;
@@ -44,7 +49,7 @@ int main(void){
 	}
 
 	while(!g_should_quit){
-		// handling events
+		// TODO(Rick): refactor input handling into function
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch(event.type){
@@ -58,15 +63,14 @@ int main(void){
 			}
 		}
 
-		// simulate 
-
-		// render
-		glClearColor(0.001f, 0.02f, 0.01f, 1.0f);
+		// TODO(Rick): refactor this into function
+		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		SDL_GL_SwapWindow(g_window);
 	}
 
+	// TODO(Rick): refactor quit into function
 	SDL_GL_DeleteContext(g_context);
 	SDL_DestroyWindow(g_window);
 	SDL_Quit();
