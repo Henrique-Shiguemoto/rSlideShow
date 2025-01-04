@@ -1,9 +1,9 @@
 #include <stdio.h>
 
 #define SDL_MAIN_HANDLED
-#include "SDL.h"
+#include "SDL2/SDL.h"
 
-#include "glad.h"
+#include "glad/glad.h"
 
 #define WINDOW_TITLE "rSlideShow"
 #define WINDOW_WIDTH 800
