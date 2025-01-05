@@ -1,0 +1,11 @@
+[TXT] = [
+	{x = 0.1, y = 0.1, color = 0x00FF00FF, text = "Hello World - Henrique", font_size = 14}
+]
+
+[IMG] = [
+	{x = 0.75, y = 0.75, width = 64, height = 64, file_path = "imgs_for_presentation/spaceship.png"}
+]
+
+[TXT] = [
+	{x = 0.25, y = 0.25, color = 0x0000FFFF, text = "Another test string", font_size = 10}
+]

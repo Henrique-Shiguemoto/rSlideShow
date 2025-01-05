@@ -18,17 +18,18 @@ typedef struct rText {
 } rText;
 
 typedef struct rSlide {
-	rImage image_array*; 		// dynamic array
-	rText text_array*; 			// dynamic array
+	rImage* image_array; 		// dynamic array
+	rText* text_array; 			// dynamic array
 	unsigned int background_color;
 } rSlide;
 
 // TODO(Rick): Implement these functions
 
-// reads and parses the correspondent .rslide file
 rSlide* rslide_create(const char* filepath);
-
-// frees the dynamic arrays and zeros everything after
 void rslide_delete(rSlide* slide);
+rText* rtext_create(const char* text, int x, int y, int font_size, unsigned int color);
+void rtext_delete(rText* text);
+rImage* rimage_create(const char* filepath, int x, int y, int width, int height);
+void rimage_delete(rImage* image);
 
 #endif // R_SLIDE_H 
