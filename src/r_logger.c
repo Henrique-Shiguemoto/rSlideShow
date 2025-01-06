@@ -24,7 +24,7 @@ int rLogger_init(rLogger_mode mode){
 			current_rLogger_mode = RLOG_FILE_MODE;
 			log_file_handle = fopen(LOG_FILE_NAME, "w+");
 			if(!log_file_handle){
-				RLOGGER_WARN("%s", "Could'nt open log file.");
+				RLOGGER_WARN("%s", "Couldn't open log file.");
 				result = 1;
 			}
 			RLOGGER_INFO("%s", "Succesfully initialized for file logging.");
@@ -35,7 +35,7 @@ int rLogger_init(rLogger_mode mode){
 			current_rLogger_mode = RLOG_TERMINAL_AND_FILE_MODE;
 			log_file_handle = fopen(LOG_FILE_NAME, "w+");
 			if(!log_file_handle){
-				RLOGGER_WARN("%s", "Could'nt open log file.");
+				RLOGGER_WARN("%s", "Couldn't open log file.");
 				result = 1;
 			}
 			RLOGGER_INFO("%s", "Succesfully initialized for text and file logging.");

@@ -5,7 +5,7 @@ int g_should_quit = 0;
 #define WINDOW_TITLE "rSlideShow"
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define SLIDE_COUNT 1
+#define SLIDE_COUNT 2
 rSlide g_slides[SLIDE_COUNT] = {0};
 
 int main(void){
@@ -16,7 +16,10 @@ int main(void){
 		return 1;
 	}
 
-	// TODO(Rick): Call rslide_create for all test_slides
+	// TODO(Rick): refactor this into a function
+	g_slides[0] = rslide_create("test_slides/slide1.rslide");
+	g_slides[1] = rslide_create("test_slides/slide2.rslide");
+
 	// TODO(Rick): Fill g_slides with parsed rSlide structs
 	// TODO(Rick): After g_slides is filled correctly, figure out a way to render it
 
@@ -24,6 +27,10 @@ int main(void){
 		handle_input();
 		render_graphics(&window);
 	}
+
+	// TODO(Rick): refactor this into a function
+	rslide_delete(&g_slides[0]);
+	rslide_delete(&g_slides[1]);
 
 	quit_everything(&window, &context);
 	return 0;
