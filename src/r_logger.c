@@ -1,7 +1,4 @@
 #include "r_logger.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
 
 static FILE* log_file_handle = NULL;
 static int _rlog_initialized = 0;

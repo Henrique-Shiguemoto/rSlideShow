@@ -1,6 +1,10 @@
 #ifndef RLOGGER_H
 #define RLOGGER_H
 
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+
 #define LOG_FILE_NAME 			"rLog.log"
 #define OUTPUT_BUFFER_SIZE 		16384
 

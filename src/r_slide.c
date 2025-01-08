@@ -35,7 +35,6 @@ void rslide_delete(rSlide* slide){
 }
 
 // TODO(Rick): Implement these functions below
-
 rText rtext_create(const char* text, int x, int y, int font_size, unsigned int color){
 	return (rText){0};
 }
