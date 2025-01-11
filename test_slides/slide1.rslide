@@ -1,7 +1,15 @@
-[TXT] = [
-	{x = 0.5, y = 0.5, color = 0xFF0000FF, text = "Hello World - Henrique", font_size = 20}
-]
+[TXT] = {
+	x = 0.5 
+	y = 0.5 
+	color = 0xFF0000FF 
+	text = "Hello World - Henrique" 
+	font_size = 20
+}
 
-[IMG] = [
-	{x = 0.75, y = 0.75, width = 250, height = 250, file_path = "imgs_for_presentation/awesomeface.png"}
-]
+[IMG] = {
+	x = 0.75
+ 	y = 0.75
+ 	width = 250
+ 	height = 250
+ 	file_path = "imgs_for_presentation/awesomeface.png"
+}

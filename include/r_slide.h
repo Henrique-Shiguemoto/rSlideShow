@@ -8,16 +8,16 @@
 
 typedef struct rImage {
 	void* pixel_data;
-	int x;
-	int y;
+	float x;
+	float y;
 	int width;
 	int height;
 } rImage;
 
 typedef struct rText {
 	const char* text;
-	int x;
-	int y;
+	float x;
+	float y;
 	int font_size;
 	unsigned int color;
 } rText;
