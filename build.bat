@@ -17,7 +17,7 @@ del /q %BIN_DIR%\*.o > nul 2>&1
 
 :: Compile all .c files in the src directory into .o in BIN_DIR
 for %%f in (%SRC_DIR%\*.c) do (
-    echo gcc -c %%f %COMPILER_FLAGS% -o %BIN_DIR%\%%~nf.o
+    echo gcc -c %%f %COMPILER_FLAGS% -o %BIN_DIR%\%%~nf.o %INCLUDE_PATH%
     gcc -c %%f %COMPILER_FLAGS% -o %BIN_DIR%\%%~nf.o %INCLUDE_PATH%
     if errorlevel 1 goto :error
 )

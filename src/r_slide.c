@@ -1,5 +1,8 @@
 #include "r_slide.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 rSlide rslide_create(const char* filepath){
 	rio_file* file = rio_open_file(filepath, RIO_READ_MODE);
 	if(!file){
@@ -19,7 +22,7 @@ rSlide rslide_create(const char* filepath){
 	
 	// TODO(Rick): Debug parsing file contents
 	rs_string token = rs_create(NULL);
-	int result_split = rs_split_by_delimiter(file_contents, '\n', &token);
+	int result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
 	int next_token_is_a_txt_parameter = 0;
 	int next_token_is_a_img_parameter = 0;
 
@@ -27,11 +30,11 @@ rSlide rslide_create(const char* filepath){
 	float y = 0.0;
 	unsigned int color = 0;
 	int font_size = 0;
-	rstring text = rs_create(NULL); // used for file_path in [IMG] and text in [TXT]
+	rs_string text = rs_create(NULL); // used for file_path in [IMG] and text in [TXT]
 	int width = 0;
 	int height = 0;
 
-	while(substring_split != RS_FAILURE){
+	while(result_split != RS_FAILURE){
 		rs_trim(&token);
 		if(rs_starts_with_substring(&token, "[TXT]")){
 			next_token_is_a_txt_parameter = 1;
@@ -63,7 +66,7 @@ rSlide rslide_create(const char* filepath){
 				rs_extract_right(&token, token.length - 12);
 				rs_convert_to_int(&token, &font_size);
 				rText text_result = rtext_create(text.buffer, x, y, font_size, color);
-				rdarray_push(&(slide.text_array), &result);
+				rdarray_push(&(slide.text_array), &text_result);
 				
 				// We don't actually need to free the rstring here, because the only place we change 
 				// 		it is in the rs_copy function call, which already frees the memory before copying,
@@ -87,7 +90,7 @@ rSlide rslide_create(const char* filepath){
 				rs_convert_to_float(&token, &y);
 			} else if (rs_starts_with_substring(&token, "width") != RS_FAILURE) {
 				rs_extract_right(&token, token.length - 8);
-				rs_convert_to_float(&token, &width);
+				rs_convert_to_int(&token, &width);
 			} else if (rs_starts_with_substring(&token, "height") != RS_FAILURE) {
 				rs_extract_right(&token, token.length - 9);
 				rs_convert_to_int(&token, &height);
@@ -95,7 +98,7 @@ rSlide rslide_create(const char* filepath){
 				rs_extract_right(&token, token.length - 12);
 				rs_copy(&token, &text);
 				rImage text_result = rimage_create(text.buffer, x, y, font_size, color);
-				rdarray_push(&(slide.image_array), &result);
+				rdarray_push(&(slide.image_array), &text_result);
 
 				// We don't actually need to free the rstring here, because the only place we change 
 				// 		it is in the rs_copy function call, which already frees the memory before copying,
@@ -111,7 +114,7 @@ rSlide rslide_create(const char* filepath){
 				next_token_is_a_img_parameter = 0;
 			}
 		}
-		result_split = rs_split_by_delimiter(file_contents, '\n', &token);
+		result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
 	}
 
 	rs_delete(&text);
@@ -129,19 +132,34 @@ void rslide_delete(rSlide* slide){
 	}
 }
 
-// TODO(Rick): Implement rtext_create, rtext_delete, rimage_create, rimage_delete
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
-	return (rText){0};
+	return (rText){.text = text, .x = x, .y = y, .font_size = font_size, .color = color};
 }
 
 void rtext_delete(rText* text){
-
+	if(!text){
+		text->text = 0;
+		text->x = 0;
+		text->y = 0;
+		text->font_size = 0;
+		text->color = 0;
+	}
 }
 
 rImage rimage_create(const char* filepath, float x, float y, int width, int height){
-	return (rImage){0};
+	int x1,y1,n1;
+   	unsigned char *data = stbi_load(filepath, &x1, &y1, &n1, 0);
+	return (rImage){.pixel_data = data, .x = x, .y = y, .width = width, .height = height};
 }
 
 void rimage_delete(rImage* image){
-	
+	if(!image){
+		stbi_image_free(image->pixel_data);
+		image->pixel_data = 0;
+		image->x = 0;
+		image->y = 0;
+		image->width = 0;
+		image->height = 0;
+	}
 }
+

@@ -276,8 +276,9 @@ int rs_split_by_delimiter(rs_string* s, char delimiter, rs_string* token){
 		currentIndex++;
 	if(currentIndex <= s->length - 1){
 		if(currentIndex > token->length){
-			token->buffer = realloc(token->buffer, currentIndex + 1);
-			if(!token->buffer) return RS_FAILURE;
+			char* temp = realloc(token->buffer, currentIndex + 1);
+			if(!temp) return RS_FAILURE;
+			token->buffer = temp;
 		}
 		//we don't need to reallocate if we want to shrink, just use the same buffer and terminate it with '\0'
 
@@ -359,7 +360,7 @@ int rs_convert_to_int(rs_string* s, int* n){
 	return RS_SUCCESS;
 }
 
-int rs_find_substring(rs_string* s, char* cstr){
+int rs_find_substring(rs_string* s, const char* cstr){
 	int substring_size = rs_length(cstr);
 	
 	if(!s || !cstr || !s->buffer || substring_size == 0) return -1;
@@ -418,4 +419,194 @@ int rs_ends_with_substring(rs_string* s, char* cstr){
 	}
 
 	return RS_SUCCESS;
+}
+
+int rs_trim_delimiter(rs_string* s, char delimiter) {
+	if(!s || !s->buffer) return RS_FAILURE;
+
+	int startIndex = 0;
+	int endIndex = s->length - 1;
+	while(s->buffer[startIndex] == delimiter || s->buffer[endIndex] == delimiter){
+		if(s->buffer[startIndex] == delimiter) startIndex++;
+		if(s->buffer[endIndex] 	 == delimiter) endIndex--;
+	}
+
+	rs_extract(s, startIndex, endIndex);
+	return RS_SUCCESS;
+}
+
+// This assumes that dest is valid of course, you'll need enough memory before hand
+int rs_copy_to_cstr(rs_string* src_s, char* dest, int dest_length) {
+	if(!src_s || !dest || !src_s->buffer || dest_length < src_s->length) return RS_FAILURE;
+
+	int i = 0;
+	while(i < dest_length){
+		dest[i] = src_s->buffer[i];
+		i++;
+	}
+	dest[i] = '\0';
+
+	return RS_SUCCESS;	
+}
+
+int rs_replace_character(rs_string* s, const char char_to_replace, const char replacement) {
+	if(!s || !s->buffer) return RS_FAILURE;
+
+	for(int i = 0; i < s->length; i++){
+		if(s->buffer[i] == char_to_replace){
+			s->buffer[i] = replacement;
+		}
+	}
+
+	return RS_SUCCESS;
+}
+
+int rs_replace_substring(rs_string* s, const char* substring_to_replace, const char* substring_replacement) {
+	int substring_to_replace_size = rs_length(substring_to_replace);
+	int substring_replacement_size = rs_length(substring_replacement);
+	int substring_to_replace_index = rs_find_substring(s, substring_to_replace);
+	if(!s || !s->buffer || !substring_to_replace_size || !substring_replacement || substring_to_replace_index < 0) return RS_FAILURE;
+
+	int size_diff = substring_to_replace_size - substring_replacement_size;
+
+	char huge_buffer[RS_STRING_MAX_LENGTH] = {0};
+
+	if(size_diff == 0){
+		do {
+			int i = substring_to_replace_index;
+
+			for (int _i = 0; _i < substring_replacement_size; ++_i) {
+				s->buffer[i + _i] = substring_replacement[_i];
+			}
+
+			substring_to_replace_index = rs_find_substring(s, substring_to_replace);
+		} while (substring_to_replace_index >= 0);
+	} else if(size_diff > 0){
+		// The substring inside rstring is bigger than the replacement
+		// Example: string = "Hello World", to_replace = "Hello W", replacement = "To", to_replace is bigger than replacement
+		do {
+			int i = substring_to_replace_index;
+
+			for (int _i = 0; _i < substring_replacement_size; ++_i) {
+				s->buffer[i + _i] = substring_replacement[_i];
+			}
+
+			// Here we still have size_diff characters from the old substring, we need to copy characters over to fill this occupied space
+			for (int _i = 0; _i < s->length - substring_to_replace_size; ++_i) {
+				s->buffer[substring_replacement_size + _i] = s->buffer[substring_replacement_size + size_diff + _i];
+			}
+			s->length -= size_diff;
+
+			substring_to_replace_index = rs_find_substring(s, substring_to_replace);
+		} while (substring_to_replace_index >= 0);
+	} else {
+		return RS_FAILURE;
+		// TODO(Rick): Finish implementing rs_replace_substring
+		// we can call rs_count_substring here to estimate how much more memory we'll need to reallocate
+		// The substring inside rstring is smaller than the replacement
+		// Example: string = "Hello World", to_replace = "Hello", replacement = "Hello123", to_replace is smaller than replacement
+
+		// TODO(Rick): try to come up with a "huge buffer" solution to this, if possible, not obligatory
+
+		// int substring_count = rs_count_substring(s, substring_to_replace);
+		// int new_memory_estimate = substring_count * (size_diff) + s->length;
+		// char* temp = realloc(s->buffer, new_memory_estimate);
+		// if(!temp) return RS_FAILURE;
+		// s->buffer = temp;
+
+		// do {
+		// 	int i = substring_to_replace_index;
+
+		// 	for (int _i = 0; _i < substring_replacement_size; ++_i) {
+		// 		s->buffer[i + _i] = substring_replacement[_i];
+		// 	}
+		// } while (substring_to_replace_index >= 0);
+	}
+	return RS_SUCCESS;
+}
+
+int rs_split_by_substring(rs_string* s, char* substring_delimiter, rs_string* token) {
+	// TODO(Rick): Finish implementing rs_split_by_substring
+	return RS_FAILURE;
+}
+
+int rs_remove_delimiter(rs_string* s, char delimiter) {
+	if(!s || !s->buffer) return RS_FAILURE;
+	
+	char buffer[RS_STRING_MAX_LENGTH] = {0};
+
+	int i = 0;
+	int j = 0;
+	while(i < s->length){
+		if(s->buffer[i] != delimiter){
+			buffer[j] = s->buffer[i];
+			j++;
+		}
+		i++;
+	}
+
+	if(!rs_set(s, buffer)) return RS_FAILURE;
+	
+	return RS_SUCCESS;
+}
+
+int rs_count_character(rs_string* s, const char character) {
+	if(!s || !s->buffer) return -1;
+
+	int result = 0;
+	for (int i = 0; i < s->length; ++i){
+		if (s->buffer[i] == character){
+			result++;
+		}
+	}
+
+	return result;
+}
+
+int rs_count_substring(rs_string* s, const char* substring) {
+	int substring_length = rs_length(substring);
+	if(!s || !s->buffer || !substring || substring_length == 0) return -1;
+
+	rs_string temp = rs_create(NULL);
+	if(!rs_copy(s, &temp)) return -1;
+
+	int substring_count = 0;
+	int substring_index = rs_find_substring(&temp, substring);
+	while(substring_index != -1){
+		substring_count++;
+		// Just incrementing the character value so the next rs_find_substring 
+		// 		looks for a different place in the rstring to find the substring
+		// If we didn't do this, rs_find_substring would return the same index everytime
+		temp.buffer[substring_index] = temp.buffer[substring_index] + 1;
+		substring_index = rs_find_substring(&temp, substring);
+	}
+
+	rs_delete(&temp);
+	return substring_count;
+}
+
+int rs_set(rs_string* s, const char* string){
+	int string_length = rs_length(string);
+	if(!s || !s->buffer || string_length == 0) return RS_FAILURE;
+
+	if(s->length < string_length) {
+		char* temp = realloc(s->buffer, string_length);
+		if(!temp) return RS_FAILURE;
+		s->buffer = temp;
+	}
+
+	int i = 0;
+	while(i < string_length){
+		s->buffer[i] = string[i];
+		i++;
+	}
+	s->buffer[i] = '\0';
+	s->length = string_length;
+	return RS_SUCCESS;
+}
+
+// For strings like "0xFFFFFFFF" or "0xCDC"
+// TODO(Rick): Finish implementing rs_convert_from_hex_to_unsigned_int
+int rs_convert_from_hex_to_unsigned_int(rs_string* s, unsigned int* n) {
+	return RS_FAILURE;
 }

@@ -24,11 +24,13 @@ int main(void){
 	// 	return 1;
 	// }
 
-	rLogger_init();
+	rLogger_init(RLOG_TERMINAL_MODE);
 	RLOGGER_INFO("Slides count: %i", SLIDE_COUNT);
 	RLOGGER_INFO("Filepath count: %i", g_filepaths_size);
+	
 	parse_rslide_files(g_slides, SLIDE_COUNT, filepaths);
 	free_rslides(g_slides, SLIDE_COUNT);
+	
 	rLogger_quit();
 	
 	// TODO(Rick): After g_slides is filled correctly, figure out a way to render it
