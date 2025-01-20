@@ -7,7 +7,7 @@ set OUTPUT_EXE=rslideshow.exe
 set COMPILER_FLAGS=-Wall -Wextra -g -std=c11 -Wno-unused-parameter -Wno-unused-variable
 set INCLUDE_PATH=-Iinclude
 set LIB_PATH=-L../lib
-set LINKER_FLAGS=-lSDL2 -lSDL2main
+set LINKER_FLAGS=-lSDL2 -lSDL2main -lSDL2_ttf
 
 :: Create the BIN directory if it doesn't exist
 if not exist %BIN_DIR% mkdir %BIN_DIR%

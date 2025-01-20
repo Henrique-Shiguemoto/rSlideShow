@@ -74,6 +74,12 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	}
 	RLOGGER_INFO("%s", "Initialized SDL2");
 
+	if(TTF_Init() < 0){
+		RLOGGER_ERROR("TTF_Init(): %s", TTF_GetError());
+		return 0;
+	}
+	RLOGGER_INFO("%s", "Initialized TTF");
+
 	*window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
 	if(!(*window)){
 		RLOGGER_ERROR("SDL_CreateWindow(): %s", SDL_GetError());
@@ -141,6 +147,8 @@ void render_graphics(SDL_Window** window){
 void quit_app(SDL_Window** window, SDL_GLContext* gl_context) {
 	R_ASSERT(*window);
 	R_ASSERT(*gl_context);
+
+	TTF_Quit();
 
 	SDL_GL_DeleteContext(*gl_context);
 	SDL_DestroyWindow(*window);
