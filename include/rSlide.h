@@ -1,10 +1,10 @@
 #ifndef R_SLIDE_H
 #define R_SLIDE_H
 
-#include "r_inout.h"
-#include "r_strlib.h"
-#include "r_darray.h"
-#include "r_logger.h"
+#include "rInout.h"
+#include "rStrlib.h"
+#include "rDarray.h"
+#include "rLogger.h"
 
 typedef struct rImage {
 	void* pixel_data;

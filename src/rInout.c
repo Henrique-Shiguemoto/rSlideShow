@@ -1,4 +1,4 @@
-#include "r_inout.h"
+#include "rInout.h"
 
 #define _rio_min(a, b) ((a) > (b) ? (b) : (a))
 

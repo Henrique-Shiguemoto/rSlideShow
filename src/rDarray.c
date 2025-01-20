@@ -1,4 +1,4 @@
-#include "r_darray.h"
+#include "rDarray.h"
 
 rdarray rdarray_create(int size_of_element){
 	rdarray array = {0};

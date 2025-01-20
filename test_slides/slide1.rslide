@@ -13,3 +13,7 @@
  	height = 250
  	file_path = "imgs_for_presentation/awesomeface.png"
 }
+
+[BACKGROUND] = {
+	color = 0x00FF00FF
+}

@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define R_ASSERT(x) do { if(!(x)) { RLOGGER_ERROR("%s assertion failed! (%s:%i)", (#x), __FILE__, __LINE__); *(char*)0 = 0; } } while(0)
+
 #define LOG_FILE_NAME 			"rLog.log"
 #define OUTPUT_BUFFER_SIZE 		16384
 

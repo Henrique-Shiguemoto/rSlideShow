@@ -1,4 +1,4 @@
-#include "r_slide.h"
+#include "rSlide.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -20,11 +20,14 @@ rSlide rslide_create(const char* filepath){
 	slide.text_array = rdarray_create(sizeof(rText));
 	slide.image_array = rdarray_create(sizeof(rImage));
 	
-	// TODO(Rick): Debug parsing file contents
+	R_ASSERT(rs_remove_delimiter(&file_contents, '\r'));
+	R_ASSERT(rs_remove_delimiter(&file_contents, '\t'));
+
 	rs_string token = rs_create(NULL);
 	int result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
 	int next_token_is_a_txt_parameter = 0;
 	int next_token_is_a_img_parameter = 0;
+	int next_token_is_a_background_parameter = 0;
 
 	float x = 0.0;
 	float y = 0.0;
@@ -39,32 +42,39 @@ rSlide rslide_create(const char* filepath){
 		if(rs_starts_with_substring(&token, "[TXT]")){
 			next_token_is_a_txt_parameter = 1;
 			next_token_is_a_img_parameter = 0;
+			next_token_is_a_background_parameter = 0;
+			result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
 			continue;
 		}else if(rs_starts_with_substring(&token, "[IMG]")){
 			next_token_is_a_txt_parameter = 0;
 			next_token_is_a_img_parameter = 1;
+			next_token_is_a_background_parameter = 0;
+			result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
+			continue;
+		}else if(rs_starts_with_substring(&token, "[BACKGROUND]")){
+			next_token_is_a_txt_parameter = 0;
+			next_token_is_a_img_parameter = 0;
+			next_token_is_a_background_parameter = 1;
+			result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
 			continue;
 		}
 
-		// TODO(Rick): Add error checking to all r_strlib function calls
 		if(next_token_is_a_txt_parameter){
 			if (rs_starts_with_substring(&token, "x") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 4);
-				rs_convert_to_float(&token, &x);
+				R_ASSERT(rs_extract_right(&token, token.length - 4));
+				R_ASSERT(rs_convert_to_float(&token, &x));
 			} else if (rs_starts_with_substring(&token, "y") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 4);
-				rs_convert_to_float(&token, &y);
+				R_ASSERT(rs_extract_right(&token, token.length - 4));
+				R_ASSERT(rs_convert_to_float(&token, &y));
 			} else if (rs_starts_with_substring(&token, "color") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 8);
-				// TODO(Rick): Convert color from string to unsigned int without using strtoul()
-				char* _temp = NULL;
-				color = strtoul(token.buffer, &_temp, 16);
+				R_ASSERT(rs_extract_right(&token, token.length - 8));
+				R_ASSERT(rs_convert_hex_to_uint(&token, &color));
 			} else if (rs_starts_with_substring(&token, "text") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 7);
-				rs_copy(&token, &text);
+				R_ASSERT(rs_extract_right(&token, token.length - 7));
+				R_ASSERT(rs_copy(&token, &text));
 			} else if (rs_starts_with_substring(&token, "font_size") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 12);
-				rs_convert_to_int(&token, &font_size);
+				R_ASSERT(rs_extract_right(&token, token.length - 12));
+				R_ASSERT(rs_convert_to_int(&token, &font_size));
 				rText text_result = rtext_create(text.buffer, x, y, font_size, color);
 				rdarray_push(&(slide.text_array), &text_result);
 				
@@ -80,23 +90,24 @@ rSlide rslide_create(const char* filepath){
 				// Just to make sure, I'm going to set both flags to 0
 				next_token_is_a_txt_parameter = 0;
 				next_token_is_a_img_parameter = 0;
+				next_token_is_a_background_parameter = 0;
 			}
 		}else if(next_token_is_a_img_parameter){
 			if (rs_starts_with_substring(&token, "x") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 4);
-				rs_convert_to_float(&token, &x);
+				R_ASSERT(rs_extract_right(&token, token.length - 4));
+				R_ASSERT(rs_convert_to_float(&token, &x));
 			} else if (rs_starts_with_substring(&token, "y") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 4);
-				rs_convert_to_float(&token, &y);
+				R_ASSERT(rs_extract_right(&token, token.length - 4));
+				R_ASSERT(rs_convert_to_float(&token, &y));
 			} else if (rs_starts_with_substring(&token, "width") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 8);
-				rs_convert_to_int(&token, &width);
+				R_ASSERT(rs_extract_right(&token, token.length - 8));
+				R_ASSERT(rs_convert_to_int(&token, &width));
 			} else if (rs_starts_with_substring(&token, "height") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 9);
-				rs_convert_to_int(&token, &height);
+				R_ASSERT(rs_extract_right(&token, token.length - 9));
+				R_ASSERT(rs_convert_to_int(&token, &height));
 			} else if (rs_starts_with_substring(&token, "file_path") != RS_FAILURE) {
-				rs_extract_right(&token, token.length - 12);
-				rs_copy(&token, &text);
+				R_ASSERT(rs_extract_right(&token, token.length - 12));
+				R_ASSERT(rs_copy(&token, &text));
 				rImage text_result = rimage_create(text.buffer, x, y, font_size, color);
 				rdarray_push(&(slide.image_array), &text_result);
 
@@ -112,6 +123,13 @@ rSlide rslide_create(const char* filepath){
 				// Just to make sure, I'm going to set both flags to 0
 				next_token_is_a_txt_parameter = 0;
 				next_token_is_a_img_parameter = 0;
+				next_token_is_a_background_parameter = 0;
+			}
+		}else if(next_token_is_a_background_parameter){
+			if(rs_starts_with_substring(&token, "color") != RS_FAILURE){
+				R_ASSERT(rs_extract_right(&token, token.length - 8));
+				R_ASSERT(rs_convert_hex_to_uint(&token, &color));
+				slide.background_color = color;
 			}
 		}
 		result_split = rs_split_by_delimiter(&file_contents, '\n', &token);

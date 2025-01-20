@@ -1,16 +1,18 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "r_slide.h"
-#include "r_logger.h"
-#include "r_darray.h"
+#include "rSlide.h"
+#include "rLogger.h"
+#include "rDarray.h"
 
 #define SDL_MAIN_HANDLED
 #include "SDL2/SDL.h"
 
 #define APP_DESIRED_FRAME_TIME_IN_MS (double)16.67
-
-#define r_assert(x) do { if(!(x)) { RLOGGER_ERROR("%s assertion failed! (%s:%i)", (#x), __FILE__, __LINE__); *(char*)0 = 0; } } while(0)
+#define COLOR_HEX_TO_FLOATS(_color) (float)(((_color) >> 24) & 0x000000FF) / 255.0f, \
+									(float)(((_color) >> 16) & 0x000000FF) / 255.0f, \
+									(float)(((_color) >> 8)  & 0x000000FF) / 255.0f, \
+									(float)(((_color) >> 0)  & 0x000000FF) / 255.0f
 
 #include "glad/glad.h"
 
