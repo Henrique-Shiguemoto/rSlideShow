@@ -151,7 +151,7 @@ void rslide_delete(rSlide* slide){
 }
 
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
-	return (rText){.text = text, .x = x, .y = y, .font_size = font_size, .color = color};
+	return (rText){.text = text, .x = x, .y = y, .font_size = font_size, .color = color, .vao_id = 0xB01DFACE, .vbo_id = 0xB01DFACE};
 }
 
 void rtext_delete(rText* text){
@@ -161,13 +161,15 @@ void rtext_delete(rText* text){
 		text->y = 0;
 		text->font_size = 0;
 		text->color = 0;
+		text->vao_id = 0;
+		text->vbo_id = 0;
 	}
 }
 
 rImage rimage_create(const char* filepath, float x, float y, int width, int height){
 	int x1,y1,n1;
    	unsigned char *data = stbi_load(filepath, &x1, &y1, &n1, 0);
-	return (rImage){.pixel_data = data, .x = x, .y = y, .width = width, .height = height};
+	return (rImage){.pixel_data = data, .x = x, .y = y, .width = width, .height = height, .vao_id = 0xB01DFACE, .vbo_id = 0xB01DFACE};
 }
 
 void rimage_delete(rImage* image){
@@ -178,6 +180,8 @@ void rimage_delete(rImage* image){
 		image->y = 0;
 		image->width = 0;
 		image->height = 0;
+		image->vao_id = 0;
+		image->vbo_id = 0;
 	}
 }
 

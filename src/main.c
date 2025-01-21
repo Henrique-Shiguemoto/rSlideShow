@@ -8,6 +8,7 @@ int g_app_running = 1;
 #define SLIDE_COUNT 2
 rSlide g_slides[SLIDE_COUNT] = {0};
 
+// this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
 	"test_slides/slide2.rslide"
@@ -28,37 +29,39 @@ int main(void){
 
 	rLogger_init(RLOG_TERMINAL_MODE);
 	
-	RLOGGER_INFO("Slides count: %i", SLIDE_COUNT);
-	RLOGGER_INFO("Filepath count: %i", g_filepaths_size);
+	RLOGGER_INFO("sizeof(rText): %lu bytes", sizeof(rText));
+	RLOGGER_INFO("sizeof(rImage): %lu bytes", sizeof(rImage));
+	RLOGGER_INFO("Slides count: %i slides", SLIDE_COUNT);
+	RLOGGER_INFO("Filepath count: %i filepaths", g_filepaths_size);
 
 	parse_rslide_files(g_slides, SLIDE_COUNT, filepaths);
 
-	while(g_app_running){
-		handle_input();
+	// while(g_app_running){
+	// 	handle_input();
 
-		double start_ticks = SDL_GetPerformanceCounter();
-		render_graphics(&window);
+	// 	double start_ticks = SDL_GetPerformanceCounter();
+	// 	render_graphics(&window);
 		
-		double end_ticks = SDL_GetPerformanceCounter();
-		double delta_ticks = end_ticks - start_ticks;
-		double delta_time_us = (delta_ticks * 1000000) / g_performance_frequency;
-		double delta_time_ms = delta_time_us / 1000;
-		double raw_fps = 1000.0 / delta_time_ms;
+	// 	double end_ticks = SDL_GetPerformanceCounter();
+	// 	double delta_ticks = end_ticks - start_ticks;
+	// 	double delta_time_us = (delta_ticks * 1000000) / g_performance_frequency;
+	// 	double delta_time_ms = delta_time_us / 1000;
+	// 	double raw_fps = 1000.0 / delta_time_ms;
 		
-		if (delta_time_ms < APP_DESIRED_FRAME_TIME_IN_MS) {
-			double time_to_sleep = APP_DESIRED_FRAME_TIME_IN_MS - delta_time_ms;
-			SDL_Delay(time_to_sleep);
-		}else{
-			RLOGGER_WARN("Frame time (%lf) longer than desired (%lf)", delta_time_ms, APP_DESIRED_FRAME_TIME_IN_MS);
-		}
+	// 	if (delta_time_ms < APP_DESIRED_FRAME_TIME_IN_MS) {
+	// 		double time_to_sleep = APP_DESIRED_FRAME_TIME_IN_MS - delta_time_ms;
+	// 		SDL_Delay(time_to_sleep);
+	// 	}else{
+	// 		RLOGGER_WARN("Frame time (%lf) longer than desired (%lf)", delta_time_ms, APP_DESIRED_FRAME_TIME_IN_MS);
+	// 	}
 
-		double virtual_end_ticks = SDL_GetPerformanceCounter();
-		double virtual_delta_ticks = virtual_end_ticks - start_ticks;
-		double virtual_delta_time_us = (virtual_delta_ticks * 1000000) / g_performance_frequency;
-		double virtual_delta_time_ms = virtual_delta_time_us / 1000;
-		double virtual_fps = 1000.0 / virtual_delta_time_ms;
-		RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
-	}
+	// 	double virtual_end_ticks = SDL_GetPerformanceCounter();
+	// 	double virtual_delta_ticks = virtual_end_ticks - start_ticks;
+	// 	double virtual_delta_time_us = (virtual_delta_ticks * 1000000) / g_performance_frequency;
+	// 	double virtual_delta_time_ms = virtual_delta_time_us / 1000;
+	// 	double virtual_fps = 1000.0 / virtual_delta_time_ms;
+	// 	RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
+	// }
 
 	free_rslides(g_slides, SLIDE_COUNT);
 	quit_app(&window, &context);
