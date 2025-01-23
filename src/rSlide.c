@@ -37,6 +37,7 @@ rSlide rslide_create(const char* filepath){
 	int width = 0;
 	int height = 0;
 
+	// TODO(Rick): check for .rslide parameters valid values, log them as warnings and set invalid values to default valid values
 	while(result_split != RS_FAILURE){
 		rs_trim(&token);
 		if(rs_starts_with_substring(&token, "[TXT]")){
@@ -71,6 +72,7 @@ rSlide rslide_create(const char* filepath){
 				R_ASSERT(rs_convert_hex_to_uint(&token, &color));
 			} else if (rs_starts_with_substring(&token, "text") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 7));
+				R_ASSERT(rs_trim_delimiter(&token, '"'));
 				R_ASSERT(rs_copy(&token, &text));
 			} else if (rs_starts_with_substring(&token, "font_size") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
@@ -107,6 +109,7 @@ rSlide rslide_create(const char* filepath){
 				R_ASSERT(rs_convert_to_int(&token, &height));
 			} else if (rs_starts_with_substring(&token, "file_path") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
+				R_ASSERT(rs_trim_delimiter(&token, '"'));
 				R_ASSERT(rs_copy(&token, &text));
 				rImage text_result = rimage_create(text.buffer, x, y, font_size, color);
 				rdarray_push(&(slide.image_array), &text_result);
@@ -144,6 +147,13 @@ rSlide rslide_create(const char* filepath){
 
 void rslide_delete(rSlide* slide){
 	if(slide){
+		for(int i = 0; i < slide->image_array.length; i++){
+			rimage_delete((rImage*)rdarray_at(&slide->image_array, i));
+		}
+		for(int i = 0; i < slide->text_array.length; i++){
+			rtext_delete((rText*)rdarray_at(&slide->text_array, i));
+		}
+
 		rdarray_delete(&(slide->image_array));
 		rdarray_delete(&(slide->text_array));
 		slide->background_color = 0;
@@ -151,25 +161,117 @@ void rslide_delete(rSlide* slide){
 }
 
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
-	return (rText){.text = text, .x = x, .y = y, .font_size = font_size, .color = color, .vao_id = 0xB01DFACE, .vbo_id = 0xB01DFACE};
+	rText text_result = {0};
+	text_result.text = text;
+	text_result.x = x;
+	text_result.y = y;
+	text_result.font_size = font_size;
+	text_result.color = color;
+
+	glGenTextures(1, &text_result.texture_id);
+	glBindTexture(GL_TEXTURE_2D, text_result.texture_id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	R_ASSERT(global_state.font != NULL);
+	SDL_Surface* text_surface = TTF_RenderText_Solid(global_state.font, text_result.text, (SDL_Color){COLOR_HEX_TO_UINT8s(text_result.color)});
+	if (text_surface && text_surface->pixels) {
+		text_result.pixel_data = text_surface->pixels;
+   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, text_surface->w, text_surface->h, 0, GL_RGB, GL_UNSIGNED_BYTE, text_surface->pixels);
+		glGenerateMipmap(GL_TEXTURE_2D);
+   	} else {
+   		RLOGGER_WARN("Failed to create SDL Surface for: %s", text_result.text);
+   		return text_result;
+   	}
+
+	float width_norm  = (float)text_surface->w / (float)global_state.window_width;
+	float height_norm = (float)text_surface->h / (float)global_state.window_height;
+	float vertex[] = {
+		//x    	  						y    								z     u    	v
+		text_result.x, 					text_result.y, 						0.5f, 0.0f, 1.0f, 
+		text_result.x + width_norm,  	text_result.y, 						0.5f, 1.0f, 1.0f, 
+		text_result.x,  				text_result.y + height_norm, 		0.5f, 0.0f, 0.0f, 
+		text_result.x,  				text_result.y + height_norm, 		0.5f, 0.0f, 0.0f, 
+		text_result.x + width_norm,  	text_result.y, 						0.5f, 1.0f, 1.0f, 
+		text_result.x + width_norm,  	text_result.y + height_norm, 		0.5f, 1.0f, 0.0f
+	};
+
+	vbo_create(&text_result.vbo_id, vertex, 6 * sizeof(float));
+	vao_create(&text_result.vao_id);
+	vao_define_vbo_layout(&text_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
+	vao_define_vbo_layout(&text_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
+
+	return text_result;
 }
 
 void rtext_delete(rText* text){
 	if(!text){
+		// This assumes that SDL_Surface field order before the pixel data pointer is Uint32 flags; SDL_PixelFormat *format; int w, h; int pitch;
+		SDL_FreeSurface((void*)((char*)text->pixel_data - 3 * sizeof(int) - sizeof(SDL_PixelFormat*) - sizeof(Uint32)));
 		text->text = 0;
 		text->x = 0;
 		text->y = 0;
 		text->font_size = 0;
 		text->color = 0;
-		text->vao_id = 0;
-		text->vbo_id = 0;
+		text->vao_id = 0xB01DFACE;
+		text->vbo_id = 0xB01DFACE;
+		text->texture_id = 0xB01DFACE;
 	}
 }
 
 rImage rimage_create(const char* filepath, float x, float y, int width, int height){
-	int x1,y1,n1;
-   	unsigned char *data = stbi_load(filepath, &x1, &y1, &n1, 0);
-	return (rImage){.pixel_data = data, .x = x, .y = y, .width = width, .height = height, .vao_id = 0xB01DFACE, .vbo_id = 0xB01DFACE};
+	R_ASSERT(filepath != NULL);
+
+	rImage img_result = {0};
+	img_result.x = x;
+	img_result.y = y;
+	img_result.width = width;
+	img_result.height = height;
+
+	glGenTextures(1, &img_result.texture_id);
+	glBindTexture(GL_TEXTURE_2D, img_result.texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	int width_file, height_file, nChannels;
+   	unsigned char *data = stbi_load(filepath, &width_file, &height_file, &nChannels, 0);
+   	if (data) {
+   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_file, height_file, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		img_result.pixel_data = data;
+   	} else {
+   		RLOGGER_WARN("Failed to load texture: %s", filepath);
+   		return img_result;
+   	}
+
+   	// normalizing these to [-1, 1]
+   	R_ASSERT(global_state.window_width > 0);
+   	R_ASSERT(global_state.window_height > 0);
+	float width_norm  = (float)img_result.width  / global_state.window_width;
+	float height_norm = (float)img_result.height / global_state.window_height;
+	float x_norm = 2 * img_result.x - 1;
+	float y_norm = 2 * img_result.y - 1;
+	float vertex[] = {
+		//x    	  					y    					z     u    	v
+		x_norm, 					y_norm, 				0.5f, 0.0f, 1.0f, 
+		x_norm + width_norm,  		y_norm, 				0.5f, 1.0f, 1.0f, 
+		x_norm,  					y_norm + height_norm, 	0.5f, 0.0f, 0.0f, 
+		x_norm,  					y_norm + height_norm, 	0.5f, 0.0f, 0.0f, 
+		x_norm + width_norm,  		y_norm, 				0.5f, 1.0f, 1.0f, 
+		x_norm + width_norm,  		y_norm + height_norm, 	0.5f, 1.0f, 0.0f
+	};
+	
+	vbo_create(&img_result.vbo_id, vertex, 6 * sizeof(float));
+	vao_create(&img_result.vao_id);
+	vao_define_vbo_layout(&img_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
+	vao_define_vbo_layout(&img_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
+
+	return img_result;
 }
 
 void rimage_delete(rImage* image){
@@ -180,8 +282,9 @@ void rimage_delete(rImage* image){
 		image->y = 0;
 		image->width = 0;
 		image->height = 0;
-		image->vao_id = 0;
-		image->vbo_id = 0;
+		image->vao_id = 0xB01DFACE;
+		image->vbo_id = 0xB01DFACE;
+		image->texture_id = 0xB01DFACE;
 	}
 }
 

@@ -11,7 +11,7 @@
 	y = 0.75 
 	width = 64 
 	height = 64 
-	file_path = "imgs_for_presentation/spaceship.png"
+	file_path = "test_slides/imgs_for_presentation/spaceship.png"
 }
 
 [TXT] = {

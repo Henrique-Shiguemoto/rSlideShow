@@ -3,8 +3,8 @@
 out vec4 outputColor;
 in vec2 textureCoordFromVertexShader;
 
-uniform sampler2D cursorTexture;
+uniform sampler2D tex;
 
 void main(){
-	outputColor = texture(cursorTexture, textureCoordFromVertexShader);
+	outputColor = texture(tex, textureCoordFromVertexShader);
 }

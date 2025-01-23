@@ -1,10 +1,20 @@
 #ifndef R_SLIDE_H
 #define R_SLIDE_H
 
+#include <glad/glad.h>
+
 #include "rInout.h"
 #include "rStrlib.h"
 #include "rDarray.h"
 #include "rLogger.h"
+#include "rVBO.h"
+#include "rVAO.h"
+#include "rGlobal.h"
+
+#define COLOR_HEX_TO_UINT8s(_color) (((_color) >> 24) & 0x000000FF), \
+									(((_color) >> 16) & 0x000000FF), \
+									(((_color) >> 8)  & 0x000000FF), \
+									(((_color) >> 0)  & 0x000000FF)
 
 typedef struct rImage {
 	void* pixel_data;
@@ -14,16 +24,19 @@ typedef struct rImage {
 	int height;
 	unsigned int vao_id;
 	unsigned int vbo_id;
+	unsigned int texture_id;
 } rImage;
 
 typedef struct rText {
 	const char* text;
+	void* pixel_data;
 	float x;
 	float y;
 	int font_size;
 	unsigned int color;
 	unsigned int vao_id;
 	unsigned int vbo_id;
+	unsigned int texture_id;
 } rText;
 
 typedef struct rSlide {

@@ -3,9 +3,9 @@
 
 #include <glad/glad.h>
 
-void vbo_create(unsigned int vbo_id, float* data, unsigned int size_in_bytes);
-void vbo_bind(unsigned int vbo_id);
-void vbo_unbind(unsigned int vbo_id);
-void vbo_delete(unsigned int vbo_id);
+void vbo_create(unsigned int* vbo_id, float* data, unsigned int size_in_bytes);
+void vbo_bind(unsigned int* vbo_id);
+void vbo_unbind(unsigned int* vbo_id);
+void vbo_delete(unsigned int* vbo_id);
 
 #endif // R_VBO_H

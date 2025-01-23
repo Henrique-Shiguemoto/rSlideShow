@@ -11,7 +11,7 @@
  	y = 0.75
  	width = 250
  	height = 250
- 	file_path = "imgs_for_presentation/awesomeface.png"
+ 	file_path = "test_slides/imgs_for_presentation/awesomeface.png"
 }
 
 [BACKGROUND] = {
