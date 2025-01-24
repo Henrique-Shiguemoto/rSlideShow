@@ -20,7 +20,7 @@
 									(float)(((_color) >> 0)  & 0x000000FF) / 255.0f
 
 int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_context);
-void handle_input();
+void handle_input(SDL_Window* window);
 void render_graphics(SDL_Window** window);
 void render_image_as_quad(rImage* image);
 void render_text_as_quad(rText* text);

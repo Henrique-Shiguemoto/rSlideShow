@@ -1,3 +1,4 @@
+
 #include "main.h"
 
 int g_app_running = 1;
@@ -5,6 +6,7 @@ int g_app_running = 1;
 rSlide g_slides[2] = {0};
 
 // TODO(Rick): Create some sort of texture interface
+// TODO(Rick): Add some sort of rslide specifications in README.md
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
@@ -42,7 +44,7 @@ int main(void){
 	shader_set_mat4_uniform(g_shader_id, "projectionMatrix", orthographic_projection_matrix);
 
 	while(g_app_running){
-		handle_input();
+		handle_input(window);
 
 		double start_ticks = SDL_GetPerformanceCounter();
 		render_graphics(&window);
@@ -89,7 +91,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 
 	global_state.font = TTF_OpenFont("assets/fonts/monterey/MontereyFLF.ttf", 20);
 
-	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL);
+	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if(!(*window)){
 		RLOGGER_ERROR("SDL_CreateWindow(): %s", SDL_GetError());
 		return 0;
@@ -128,7 +130,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	return 1;
 }
 
-void handle_input(){
+void handle_input(SDL_Window* window){
 	static char g_left_arrow_was_down = 0;
 	static char g_right_arrow_was_down = 0;
 
@@ -146,6 +148,15 @@ void handle_input(){
 		}
 
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
+		if(event.type == SDL_WINDOWEVENT) { 
+			if(event.window.event == SDL_WINDOWEVENT_RESIZED){
+				int w, h;
+				SDL_GetWindowSize(window, &w, &h);
+				global_state.window_width = (unsigned int)w;
+				global_state.window_height = (unsigned int)h;
+				glViewport(0, 0, global_state.window_width, global_state.window_height);
+			}
+		}
 
 		g_left_arrow_was_down = g_left_arrow_is_down;
 		g_right_arrow_was_down = g_right_arrow_is_down;
@@ -226,12 +237,11 @@ void free_rslides(rSlide* slides, int slide_count) {
 
 void render_image_as_quad(rImage* image){
 	rm_mat4f model = rm_identity_mat4f();
-	// model = rm_mult_mat4f(
-	// 	rm_translation_3D((rm_v3f){image->x, image->y, 0.0f}), 
-	// 	model
-	// );
-
-	// model = rm_transpose_mat4f(model);
+	model = rm_mult_mat4f(
+		rm_translation_3D((rm_v3f){image->x, image->y, 0.0f}), 
+		model
+	);
+	model = rm_transpose_mat4f(model);
 
 	shader_set_mat4_uniform(g_shader_id, "modelMatrix", model);
 
@@ -247,6 +257,7 @@ void render_text_as_quad(rText* text){
 		rm_translation_3D((rm_v3f){text->x, text->y, 0.0f}), 
 		model
 	);
+	model = rm_transpose_mat4f(model);
 
 	shader_set_mat4_uniform(g_shader_id, "modelMatrix", model);
 

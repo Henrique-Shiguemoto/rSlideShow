@@ -162,11 +162,14 @@ void rslide_delete(rSlide* slide){
 
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
 	R_ASSERT(text != NULL);
+	R_ASSERT(global_state.window_width > 0);
+   	R_ASSERT(global_state.window_height > 0);
+   	R_ASSERT(global_state.font != NULL);
 
 	rText text_result = {0};
 	text_result.text = text;
-	text_result.x = x;
-	text_result.y = y;
+	text_result.x = 2 * x - 1;
+	text_result.y = 2 * y - 1;
 	text_result.font_size = font_size;
 	text_result.color = color;
 
@@ -177,7 +180,6 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	R_ASSERT(global_state.font != NULL);
 	SDL_Surface* text_surface = TTF_RenderText_Solid(global_state.font, text_result.text, (SDL_Color){COLOR_HEX_TO_UINT8s(text_result.color)});
 	if (text_surface && text_surface->pixels) {
 		text_result.pixel_data = text_surface->pixels;
@@ -189,8 +191,6 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
    		return text_result;
    	}
 
-	float width_norm  = (float)text_surface->w / (float)global_state.window_width;
-	float height_norm = (float)text_surface->h / (float)global_state.window_height;
 	float vertex[] = {
 		//x    	 y    	z     u    	v
 		-0.5f, 	 0.5f, 	0.0f, 0.0f, 1.0f, 
@@ -239,8 +239,8 @@ rImage rimage_create(const char* filepath, float x, float y, int width, int heig
 	R_ASSERT(filepath != NULL);
 
 	rImage img_result = {0};
-	img_result.x = x;
-	img_result.y = y;
+	img_result.x = 2 * x - 1;
+	img_result.y = 2 * y - 1;
 	img_result.width = width;
 	img_result.height = height;
 
@@ -265,21 +265,16 @@ rImage rimage_create(const char* filepath, float x, float y, int width, int heig
    		return img_result;
    	}
 
-   	// normalizing these to [-1, 1]
    	R_ASSERT(global_state.window_width > 0);
    	R_ASSERT(global_state.window_height > 0);
-	// float width_norm  = 2 * ((float)img_result.width  / global_state.window_width) - 1;
-	// float height_norm = 2 * ((float)img_result.height / global_state.window_height) - 1;
-	// float x_norm = 2 * img_result.x - 1;
-	// float y_norm = 2 * img_result.y - 1;
 	float vertex[] = {
 		//x    	 y    	z     u    	v
-		-0.5f, 	 0.5f, 	0.0f, 0.0f, 1.0f, 
-		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
-		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
-		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
-		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
-		 0.5f,  -0.5f, 	0.0f, 1.0f, 0.0f
+		-1.0f, 	 1.0f, 	0.0f, 0.0f, 1.0f, // top - left
+		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
+		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
+		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
+		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
+		 1.0f,  -1.0f, 	0.0f, 1.0f, 0.0f  // bot - right
 	};
 
 	RLOGGER_INFO("Vertices for: %s", filepath);
