@@ -2,11 +2,7 @@
 
 int g_app_running = 1;
 
-#define WINDOW_TITLE "rSlideShow"
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-#define SLIDE_COUNT 2
-rSlide g_slides[SLIDE_COUNT] = {0};
+rSlide g_slides[2] = {0};
 
 // TODO(Rick): Create some sort of texture interface
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
@@ -14,12 +10,9 @@ const char* filepaths[] = {
 	"test_slides/slide1.rslide",
 	"test_slides/slide2.rslide"
 };
-int g_filepaths_size = (sizeof(filepaths) / sizeof(filepaths[0]));
-
+unsigned int g_filepaths_size = (sizeof(filepaths) / sizeof(filepaths[0]));
 unsigned long int g_performance_frequency = 0;
-
-int g_slide_index = 0;
-
+unsigned int g_slide_index = 0;
 unsigned int g_shader_id = 0;
 
 int main(void){
@@ -27,12 +20,12 @@ int main(void){
 	
 	RLOGGER_INFO("sizeof(rText): %lu bytes", sizeof(rText));
 	RLOGGER_INFO("sizeof(rImage): %lu bytes", sizeof(rImage));
-	RLOGGER_INFO("Slides count: %i slides", SLIDE_COUNT);
+	RLOGGER_INFO("Slides count: %i slides", global_state.slide_count);
 	RLOGGER_INFO("Filepath count: %i filepaths", g_filepaths_size);
 
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
-	if(!init_app(&window, WINDOW_WIDTH, WINDOW_HEIGHT, &context)){
+	if(!init_app(&window, global_state.window_width, global_state.window_height, &context)){
 		RLOGGER_ERROR("%s", "Something went wrong with the initialization...");
 		return 1;
 	}
@@ -45,6 +38,7 @@ int main(void){
 	shader_use(g_shader_id);
 	
 	rm_mat4f orthographic_projection_matrix = rm_parallel_projection_3D(0.0f, global_state.window_width, 0.0f, global_state.window_height, -2.0, 2.0);
+	// orthographic_projection_matrix = rm_transpose_mat4f(orthographic_projection_matrix);
 	shader_set_mat4_uniform(g_shader_id, "projectionMatrix", orthographic_projection_matrix);
 
 	while(g_app_running){
@@ -95,7 +89,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 
 	global_state.font = TTF_OpenFont("assets/fonts/monterey/MontereyFLF.ttf", 20);
 
-	*window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL);
 	if(!(*window)){
 		RLOGGER_ERROR("SDL_CreateWindow(): %s", SDL_GetError());
 		return 0;
@@ -124,7 +118,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	RLOGGER_INFO("Renderer: %s", glGetString(GL_RENDERER));
 	RLOGGER_INFO("Version:  %s", glGetString(GL_VERSION));
 
-	int parse_result = parse_rslide_files(g_slides, SLIDE_COUNT, filepaths);
+	int parse_result = parse_rslide_files(g_slides, global_state.slide_count, filepaths);
 	if(!parse_result){
 		RLOGGER_ERROR("%s", "parse_rslide_files() has failed");
 		return 0;
@@ -146,9 +140,9 @@ void handle_input(){
 		char g_right_arrow_is_down = keyboardState[SDL_SCANCODE_RIGHT];
 
 		if(g_left_arrow_is_down && !g_left_arrow_was_down){
-			if(--g_slide_index < 0) { g_slide_index = 0; }
+			if(--g_slide_index == 0) { g_slide_index = 0; }
 		}else if(g_right_arrow_is_down && !g_right_arrow_was_down){
-			if(++g_slide_index >= SLIDE_COUNT) { g_slide_index = SLIDE_COUNT - 1; }
+			if(++g_slide_index >= global_state.slide_count) { g_slide_index = global_state.slide_count - 1; }
 		}
 
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
@@ -173,10 +167,10 @@ void render_graphics(SDL_Window** window){
 	}
 
 	// render texts
-	for(int i = 0; i < slide.text_array.length; i++){
-		rText* text_to_render = (rText*)rdarray_at(&slide.text_array, i);
-		render_text_as_quad(text_to_render);
-	}
+	// for(int i = 0; i < slide.text_array.length; i++){
+	// 	rText* text_to_render = (rText*)rdarray_at(&slide.text_array, i);
+	// 	render_text_as_quad(text_to_render);
+	// }
 	
 	SDL_GL_SwapWindow(*window);
 }
@@ -210,7 +204,7 @@ void quit_app(SDL_Window** window, SDL_GLContext* gl_context) {
 }
 
 int parse_rslide_files(rSlide* slides, int slide_count, const char** filepaths) {
-	R_ASSERT(SLIDE_COUNT == g_filepaths_size);
+	R_ASSERT(global_state.slide_count == g_filepaths_size);
 	R_ASSERT(slides);
 	R_ASSERT(filepaths);
 
@@ -232,17 +226,19 @@ void free_rslides(rSlide* slides, int slide_count) {
 
 void render_image_as_quad(rImage* image){
 	rm_mat4f model = rm_identity_mat4f();
-	model = rm_mult_mat4f(
-		rm_translation_3D((rm_v3f){image->x, image->y, 0.0f}), 
-		model
-	);
+	// model = rm_mult_mat4f(
+	// 	rm_translation_3D((rm_v3f){image->x, image->y, 0.0f}), 
+	// 	model
+	// );
+
+	// model = rm_transpose_mat4f(model);
 
 	shader_set_mat4_uniform(g_shader_id, "modelMatrix", model);
 
 	glBindTexture(GL_TEXTURE_2D, image->texture_id);
 	vao_bind(&image->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	vao_unbind(&image->vao_id);
+	vao_unbind();
 }
 
 void render_text_as_quad(rText* text){
@@ -257,5 +253,5 @@ void render_text_as_quad(rText* text){
 	glBindTexture(GL_TEXTURE_2D, text->texture_id);
 	vao_bind(&text->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	vao_unbind(&text->vao_id);
+	vao_unbind();
 }

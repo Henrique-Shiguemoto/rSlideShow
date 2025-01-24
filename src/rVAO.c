@@ -15,8 +15,7 @@ void vao_bind(unsigned int* vao_id){
 	glBindVertexArray(*vao_id);
 }
 
-// I know vao_id isn't even used here, it's ok
-void vao_unbind(unsigned int* vao_id){
+void vao_unbind(){
 	glBindVertexArray(0);
 }
 

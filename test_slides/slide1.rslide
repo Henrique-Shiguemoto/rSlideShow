@@ -2,7 +2,7 @@
 	x = 0.5 
 	y = 0.5 
 	color = 0xFF0000FF 
-	text = "Hello World - Henrique" 
+	text = "Hello World - Henrique - 1" 
 	font_size = 20
 }
 

@@ -161,6 +161,8 @@ void rslide_delete(rSlide* slide){
 }
 
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
+	R_ASSERT(text != NULL);
+
 	rText text_result = {0};
 	text_result.text = text;
 	text_result.x = x;
@@ -181,6 +183,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		text_result.pixel_data = text_surface->pixels;
    		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, text_surface->w, text_surface->h, 0, GL_RGB, GL_UNSIGNED_BYTE, text_surface->pixels);
 		glGenerateMipmap(GL_TEXTURE_2D);
+		RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text_result.text);
    	} else {
    		RLOGGER_WARN("Failed to create SDL Surface for: %s", text_result.text);
    		return text_result;
@@ -189,17 +192,28 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 	float width_norm  = (float)text_surface->w / (float)global_state.window_width;
 	float height_norm = (float)text_surface->h / (float)global_state.window_height;
 	float vertex[] = {
-		//x    	  						y    								z     u    	v
-		text_result.x, 					text_result.y, 						0.5f, 0.0f, 1.0f, 
-		text_result.x + width_norm,  	text_result.y, 						0.5f, 1.0f, 1.0f, 
-		text_result.x,  				text_result.y + height_norm, 		0.5f, 0.0f, 0.0f, 
-		text_result.x,  				text_result.y + height_norm, 		0.5f, 0.0f, 0.0f, 
-		text_result.x + width_norm,  	text_result.y, 						0.5f, 1.0f, 1.0f, 
-		text_result.x + width_norm,  	text_result.y + height_norm, 		0.5f, 1.0f, 0.0f
+		//x    	 y    	z     u    	v
+		-0.5f, 	 0.5f, 	0.0f, 0.0f, 1.0f, 
+		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
+		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
+		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
+		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
+		 0.5f,  -0.5f, 	0.0f, 1.0f, 0.0f
 	};
 
-	vbo_create(&text_result.vbo_id, vertex, 6 * sizeof(float));
+	RLOGGER_INFO("Vertices for: %s", text_result.text);
+	RLOGGER_INFO("%s", "vertex[] = {");
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[0],   vertex[1],   vertex[2],   vertex[3],  vertex[4]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[5],   vertex[6],   vertex[7],   vertex[8],  vertex[9]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[10],  vertex[11],  vertex[12],  vertex[13], vertex[14]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[15],  vertex[16],  vertex[17],  vertex[18], vertex[19]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[20],  vertex[21],  vertex[22],  vertex[23], vertex[24]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f",  vertex[25],  vertex[26],  vertex[27],  vertex[28], vertex[29]);
+	RLOGGER_INFO("%s", "}");
+
 	vao_create(&text_result.vao_id);
+	vao_bind(&text_result.vao_id);
+	vbo_create(&text_result.vbo_id, vertex, sizeof(vertex));
 	vao_define_vbo_layout(&text_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&text_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
 
@@ -238,12 +252,14 @@ rImage rimage_create(const char* filepath, float x, float y, int width, int heig
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
+	stbi_set_flip_vertically_on_load(1);
 	int width_file, height_file, nChannels;
    	unsigned char *data = stbi_load(filepath, &width_file, &height_file, &nChannels, 0);
    	if (data) {
-   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_file, height_file, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_file, height_file, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		img_result.pixel_data = data;
+		RLOGGER_INFO("Succesfully loaded image: %s", filepath);
    	} else {
    		RLOGGER_WARN("Failed to load texture: %s", filepath);
    		return img_result;
@@ -252,22 +268,33 @@ rImage rimage_create(const char* filepath, float x, float y, int width, int heig
    	// normalizing these to [-1, 1]
    	R_ASSERT(global_state.window_width > 0);
    	R_ASSERT(global_state.window_height > 0);
-	float width_norm  = (float)img_result.width  / global_state.window_width;
-	float height_norm = (float)img_result.height / global_state.window_height;
-	float x_norm = 2 * img_result.x - 1;
-	float y_norm = 2 * img_result.y - 1;
+	// float width_norm  = 2 * ((float)img_result.width  / global_state.window_width) - 1;
+	// float height_norm = 2 * ((float)img_result.height / global_state.window_height) - 1;
+	// float x_norm = 2 * img_result.x - 1;
+	// float y_norm = 2 * img_result.y - 1;
 	float vertex[] = {
-		//x    	  					y    					z     u    	v
-		x_norm, 					y_norm, 				0.5f, 0.0f, 1.0f, 
-		x_norm + width_norm,  		y_norm, 				0.5f, 1.0f, 1.0f, 
-		x_norm,  					y_norm + height_norm, 	0.5f, 0.0f, 0.0f, 
-		x_norm,  					y_norm + height_norm, 	0.5f, 0.0f, 0.0f, 
-		x_norm + width_norm,  		y_norm, 				0.5f, 1.0f, 1.0f, 
-		x_norm + width_norm,  		y_norm + height_norm, 	0.5f, 1.0f, 0.0f
+		//x    	 y    	z     u    	v
+		-0.5f, 	 0.5f, 	0.0f, 0.0f, 1.0f, 
+		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
+		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
+		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
+		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
+		 0.5f,  -0.5f, 	0.0f, 1.0f, 0.0f
 	};
+
+	RLOGGER_INFO("Vertices for: %s", filepath);
+	RLOGGER_INFO("%s", "vertex[] = {");
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[0],   vertex[1],   vertex[2],   vertex[3],  vertex[4]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[5],   vertex[6],   vertex[7],   vertex[8],  vertex[9]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[10],  vertex[11],  vertex[12],  vertex[13], vertex[14]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[15],  vertex[16],  vertex[17],  vertex[18], vertex[19]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[20],  vertex[21],  vertex[22],  vertex[23], vertex[24]);
+	RLOGGER_INFO("\t%f, %f, %f, %f, %f",  vertex[25],  vertex[26],  vertex[27],  vertex[28], vertex[29]);
+	RLOGGER_INFO("%s", "}");
 	
-	vbo_create(&img_result.vbo_id, vertex, 6 * sizeof(float));
 	vao_create(&img_result.vao_id);
+	vao_bind(&img_result.vao_id);
+	vbo_create(&img_result.vbo_id, vertex, sizeof(vertex));
 	vao_define_vbo_layout(&img_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&img_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
 

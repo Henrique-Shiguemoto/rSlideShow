@@ -10,8 +10,7 @@ void vbo_bind(unsigned int* vbo_id){
 	glBindBuffer(GL_ARRAY_BUFFER, *vbo_id);
 }
 
-// I know vbo_id isn't even used here, it's ok
-void vbo_unbind(unsigned int* vbo_id){
+void vbo_unbind(){
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
