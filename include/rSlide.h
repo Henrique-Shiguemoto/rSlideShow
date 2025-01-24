@@ -20,8 +20,8 @@ typedef struct rImage {
 	void* pixel_data;
 	float x;
 	float y;
-	int width;
-	int height;
+	float width;
+	float height;
 	unsigned int vao_id;
 	unsigned int vbo_id;
 	unsigned int texture_id;
@@ -51,7 +51,7 @@ void rslide_delete(rSlide* slide);
 rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color);
 void rtext_delete(rText* text);
 
-rImage rimage_create(const char* filepath, float x, float y, int width, int height);
+rImage rimage_create(const char* filepath, float x, float y, float width, float height);
 void rimage_delete(rImage* image);
 
 #endif // R_SLIDE_H 

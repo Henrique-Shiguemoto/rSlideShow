@@ -236,15 +236,7 @@ void free_rslides(rSlide* slides, int slide_count) {
 }
 
 void render_image_as_quad(rImage* image){
-	rm_mat4f model = rm_identity_mat4f();
-	model = rm_mult_mat4f(
-		rm_translation_3D((rm_v3f){image->x, image->y, 0.0f}), 
-		model
-	);
-	model = rm_transpose_mat4f(model);
-
-	shader_set_mat4_uniform(g_shader_id, "modelMatrix", model);
-
+	// can apply transformations here
 	glBindTexture(GL_TEXTURE_2D, image->texture_id);
 	vao_bind(&image->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -252,15 +244,7 @@ void render_image_as_quad(rImage* image){
 }
 
 void render_text_as_quad(rText* text){
-	rm_mat4f model = rm_identity_mat4f();
-	model = rm_mult_mat4f(
-		rm_translation_3D((rm_v3f){text->x, text->y, 0.0f}), 
-		model
-	);
-	model = rm_transpose_mat4f(model);
-
-	shader_set_mat4_uniform(g_shader_id, "modelMatrix", model);
-
+	// can apply transformations here
 	glBindTexture(GL_TEXTURE_2D, text->texture_id);
 	vao_bind(&text->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);

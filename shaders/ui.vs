@@ -5,10 +5,7 @@ layout(location = 1) in vec2 texCoord;
 
 out vec2 textureCoordFromVertexShader;
 
-uniform mat4 modelMatrix;
-uniform mat4 projectionMatrix;
-
 void main(){
-	gl_Position = modelMatrix * vec4(vertexPos, 1.0f);
+	gl_Position = vec4(vertexPos, 1.0f);
 	textureCoordFromVertexShader = texCoord;
 }

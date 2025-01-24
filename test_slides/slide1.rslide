@@ -9,8 +9,16 @@
 [IMG] = {
 	x = 0.5
  	y = 0.5
- 	width = 250
- 	height = 250
+ 	width = 300
+ 	height = 300
+ 	file_path = "test_slides/imgs_for_presentation/awesomeface.png"
+}
+
+[IMG] = {
+	x = 0.0
+ 	y = 0.0
+ 	width = 300
+ 	height = 300
  	file_path = "test_slides/imgs_for_presentation/awesomeface.png"
 }
 

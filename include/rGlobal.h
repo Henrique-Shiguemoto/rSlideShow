@@ -5,8 +5,8 @@
 
 typedef struct rGlobal {
 	const char* app_name;
-	unsigned int window_width;
-	unsigned int window_height;
+	float window_width;
+	float window_height;
 	unsigned int slide_count;
 	TTF_Font* font; // for now only one global font
 } rGlobal;

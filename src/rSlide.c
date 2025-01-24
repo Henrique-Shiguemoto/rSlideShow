@@ -29,13 +29,13 @@ rSlide rslide_create(const char* filepath){
 	int next_token_is_a_img_parameter = 0;
 	int next_token_is_a_background_parameter = 0;
 
-	float x = 0.0;
-	float y = 0.0;
+	float x = 0.0f;
+	float y = 0.0f;
 	unsigned int color = 0;
 	int font_size = 0;
 	rs_string text = rs_create(NULL); // used for file_path in [IMG] and text in [TXT]
-	int width = 0;
-	int height = 0;
+	float width = 0.0f;
+	float height = 0.0f;
 
 	// TODO(Rick): check for .rslide parameters valid values, log them as warnings and set invalid values to default valid values
 	while(result_split != RS_FAILURE){
@@ -103,16 +103,16 @@ rSlide rslide_create(const char* filepath){
 				R_ASSERT(rs_convert_to_float(&token, &y));
 			} else if (rs_starts_with_substring(&token, "width") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 8));
-				R_ASSERT(rs_convert_to_int(&token, &width));
+				R_ASSERT(rs_convert_to_float(&token, &width));
 			} else if (rs_starts_with_substring(&token, "height") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 9));
-				R_ASSERT(rs_convert_to_int(&token, &height));
+				R_ASSERT(rs_convert_to_float(&token, &height));
 			} else if (rs_starts_with_substring(&token, "file_path") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
 				R_ASSERT(rs_trim_delimiter(&token, '"'));
 				R_ASSERT(rs_copy(&token, &text));
-				rImage text_result = rimage_create(text.buffer, x, y, font_size, color);
-				rdarray_push(&(slide.image_array), &text_result);
+				rImage img_result = rimage_create(text.buffer, x, y, width, height);
+				rdarray_push(&(slide.image_array), &img_result);
 
 				// We don't actually need to free the rstring here, because the only place we change 
 				// 		it is in the rs_copy function call, which already frees the memory before copying,
@@ -120,8 +120,8 @@ rSlide rslide_create(const char* filepath){
 				// 		for the last time.
 				x = 0.0;
 				y = 0.0;
-				width = 0;
-				height = 0;
+				width = 0.0;
+				height = 0.0;
 
 				// Just to make sure, I'm going to set both flags to 0
 				next_token_is_a_txt_parameter = 0;
@@ -166,6 +166,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
    	R_ASSERT(global_state.window_height > 0);
    	R_ASSERT(global_state.font != NULL);
 
+   	// TODO(Rick): make sure that rtext_create is analogous to rimage_create for the coordinate system's conversion
 	rText text_result = {0};
 	text_result.text = text;
 	text_result.x = 2 * x - 1;
@@ -193,12 +194,12 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 
 	float vertex[] = {
 		//x    	 y    	z     u    	v
-		-0.5f, 	 0.5f, 	0.0f, 0.0f, 1.0f, 
-		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
-		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
-		-0.5f,  -0.5f, 	0.0f, 0.0f, 0.0f, 
-		 0.5f,   0.5f, 	0.0f, 1.0f, 1.0f, 
-		 0.5f,  -0.5f, 	0.0f, 1.0f, 0.0f
+		-1.0f, 	 1.0f, 	0.0f, 0.0f, 1.0f, // top - left
+		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
+		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
+		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
+		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
+		 1.0f,  -1.0f, 	0.0f, 1.0f, 0.0f  // bot - right
 	};
 
 	RLOGGER_INFO("Vertices for: %s", text_result.text);
@@ -235,14 +236,19 @@ void rtext_delete(rText* text){
 	}
 }
 
-rImage rimage_create(const char* filepath, float x, float y, int width, int height){
+rImage rimage_create(const char* filepath, float x, float y, float width, float height){
 	R_ASSERT(filepath != NULL);
+	R_ASSERT(global_state.window_width > 0);
+   	R_ASSERT(global_state.window_height > 0);
 
 	rImage img_result = {0};
+	// converted to be normalized [-1, 1]
 	img_result.x = 2 * x - 1;
-	img_result.y = 2 * y - 1;
-	img_result.width = width;
-	img_result.height = height;
+	img_result.y = -(2 * y - 1);
+
+	// converted to be normalized [0, 2]
+	img_result.width  = 2.0f * (width / global_state.window_width);
+	img_result.height = 2.0f * (height / global_state.window_height);
 
 	glGenTextures(1, &img_result.texture_id);
 	glBindTexture(GL_TEXTURE_2D, img_result.texture_id);
@@ -265,16 +271,14 @@ rImage rimage_create(const char* filepath, float x, float y, int width, int heig
    		return img_result;
    	}
 
-   	R_ASSERT(global_state.window_width > 0);
-   	R_ASSERT(global_state.window_height > 0);
 	float vertex[] = {
-		//x    	 y    	z     u    	v
-		-1.0f, 	 1.0f, 	0.0f, 0.0f, 1.0f, // top - left
-		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
-		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
-		-1.0f,  -1.0f, 	0.0f, 0.0f, 0.0f, // bot - left
-		 1.0f,   1.0f, 	0.0f, 1.0f, 1.0f, // top - right
-		 1.0f,  -1.0f, 	0.0f, 1.0f, 0.0f  // bot - right
+		//x    	 							y    								z     u    	v
+		img_result.x, 	 					img_result.y, 						0.0f, 0.0f, 1.0f, // top - left
+		img_result.x + img_result.width,   	img_result.y, 						0.0f, 1.0f, 1.0f, // top - right
+		img_result.x,    					img_result.y - img_result.height, 	0.0f, 0.0f, 0.0f, // bot - left
+		img_result.x,    					img_result.y - img_result.height, 	0.0f, 0.0f, 0.0f, // bot - left
+		img_result.x + img_result.width,   	img_result.y, 						0.0f, 1.0f, 1.0f, // top - right
+		img_result.x + img_result.width,  	img_result.y - img_result.height, 	0.0f, 1.0f, 0.0f  // bot - right
 	};
 
 	RLOGGER_INFO("Vertices for: %s", filepath);
