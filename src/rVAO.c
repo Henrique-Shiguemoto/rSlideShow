@@ -8,7 +8,7 @@ void vao_define_vbo_layout(unsigned int* vbo_id, unsigned int layout_index, int 
 	vbo_bind(vbo_id);
 	glVertexAttribPointer(layout_index, size_in_components, GL_FLOAT, GL_FALSE, stride, (void*)(offset_in_components * sizeof(GL_FLOAT)));
 	glEnableVertexAttribArray(layout_index);
-	vbo_unbind(vbo_id);
+	vbo_unbind();
 }
 
 void vao_bind(unsigned int* vao_id){

@@ -3,7 +3,7 @@
 	y = 0.1 
 	color = 0x00FF00FF 
 	text = "Hello World - Henrique - 2" 
-	font_size = 14
+	font_size = 60
 }
 
 [IMG] = {
@@ -19,7 +19,7 @@
 	y = 0.25 
 	color = 0x0000FFFF 
 	text = "Another test string" 
-	font_size = 10
+	font_size = 60
 }
 
 [BACKGROUND] = {

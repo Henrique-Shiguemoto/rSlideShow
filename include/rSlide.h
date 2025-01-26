@@ -54,4 +54,6 @@ void rtext_delete(rText* text);
 rImage rimage_create(const char* filepath, float x, float y, float width, float height);
 void rimage_delete(rImage* image);
 
+int SDL_FlipSurfaceVertical(SDL_Surface *surface);
+
 #endif // R_SLIDE_H 

@@ -1,4 +1,4 @@
-#include "rmathlib.h"
+#include "rMathlib.h"
 
 //GLOBALS
 static int seeded = RMATH_FALSE;

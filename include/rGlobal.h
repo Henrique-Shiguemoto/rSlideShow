@@ -8,7 +8,6 @@ typedef struct rGlobal {
 	float window_width;
 	float window_height;
 	unsigned int slide_count;
-	TTF_Font* font; // for now only one global font
 } rGlobal;
 
 extern rGlobal global_state;

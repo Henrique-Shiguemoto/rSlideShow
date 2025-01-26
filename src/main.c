@@ -7,6 +7,7 @@ rSlide g_slides[2] = {0};
 
 // TODO(Rick): Create some sort of texture interface
 // TODO(Rick): Add some sort of rslide specifications in README.md
+// TODO(Rick): Add project roadmap as another .md file
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
@@ -39,9 +40,9 @@ int main(void){
 	}
 	shader_use(g_shader_id);
 	
-	rm_mat4f orthographic_projection_matrix = rm_parallel_projection_3D(0.0f, global_state.window_width, 0.0f, global_state.window_height, -2.0, 2.0);
-	// orthographic_projection_matrix = rm_transpose_mat4f(orthographic_projection_matrix);
-	shader_set_mat4_uniform(g_shader_id, "projectionMatrix", orthographic_projection_matrix);
+	// rm_mat4f orthographic_projection_matrix = rm_parallel_projection_3D(0.0f, global_state.window_width, 0.0f, global_state.window_height, -2.0, 2.0);
+	// // orthographic_projection_matrix = rm_transpose_mat4f(orthographic_projection_matrix);
+	// shader_set_mat4_uniform(g_shader_id, "projectionMatrix", orthographic_projection_matrix);
 
 	while(g_app_running){
 		handle_input(window);
@@ -89,8 +90,6 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	}
 	RLOGGER_INFO("%s", "Initialized TTF");
 
-	global_state.font = TTF_OpenFont("assets/fonts/monterey/MontereyFLF.ttf", 20);
-
 	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if(!(*window)){
 		RLOGGER_ERROR("SDL_CreateWindow(): %s", SDL_GetError());
@@ -119,6 +118,8 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	RLOGGER_INFO("Vendor:   %s", glGetString(GL_VENDOR));
 	RLOGGER_INFO("Renderer: %s", glGetString(GL_RENDERER));
 	RLOGGER_INFO("Version:  %s", glGetString(GL_VERSION));
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int parse_result = parse_rslide_files(g_slides, global_state.slide_count, filepaths);
 	if(!parse_result){
@@ -178,10 +179,10 @@ void render_graphics(SDL_Window** window){
 	}
 
 	// render texts
-	// for(int i = 0; i < slide.text_array.length; i++){
-	// 	rText* text_to_render = (rText*)rdarray_at(&slide.text_array, i);
-	// 	render_text_as_quad(text_to_render);
-	// }
+	for(int i = 0; i < slide.text_array.length; i++){
+		rText* text_to_render = (rText*)rdarray_at(&slide.text_array, i);
+		render_text_as_quad(text_to_render);
+	}
 	
 	SDL_GL_SwapWindow(*window);
 }
@@ -195,9 +196,6 @@ void quit_app(SDL_Window** window, SDL_GLContext* gl_context) {
 
 	shader_delete(g_shader_id);
 	RLOGGER_INFO("%s", "Deleted Shader");
-
-	TTF_CloseFont(global_state.font);
-	RLOGGER_INFO("%s", "Closing font");
 
 	TTF_Quit();
 	RLOGGER_INFO("%s", "Quit SDL_TTF");

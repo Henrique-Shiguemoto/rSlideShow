@@ -1,9 +1,9 @@
 [TXT] = {
-	x = 0.5 
-	y = 0.5 
-	color = 0xFF0000FF 
-	text = "Hello World - Henrique - 1" 
-	font_size = 20
+	x = 0.0 
+	y = 0.0 
+	color = 0xff00ff00
+	text = "Henrique" 
+	font_size = 80
 }
 
 [IMG] = {
@@ -23,5 +23,5 @@
 }
 
 [BACKGROUND] = {
-	color = 0x00FF00FF
+	color = 0x00FF0000
 }
