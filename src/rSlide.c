@@ -29,15 +29,18 @@ rSlide rslide_create(const char* filepath){
 	int next_token_is_a_img_parameter = 0;
 	int next_token_is_a_background_parameter = 0;
 
+	int line = 0;
 	float x = 0.0f;
 	float y = 0.0f;
 	unsigned int color = 0;
 	int font_size = 0;
-	rs_string text = rs_create(NULL); // used for file_path in [IMG] and text in [TXT]
+	rs_string text = rs_create(NULL);
 	float width = 0.0f;
 	float height = 0.0f;
 
-	// TODO(Rick): check for .rslide parameters valid values, log them as warnings and set invalid values to default valid values
+	RLOGGER_INFO("Parsing %s", filepath);
+	
+	// TODO(Rick): create another .rslide file in the test_slides folder, but with all wrong parameters, just to see what happens and if the logger is correct
 	while(result_split != RS_FAILURE){
 		rs_trim(&token);
 		if(rs_starts_with_substring(&token, "[TXT]")){
@@ -63,20 +66,49 @@ rSlide rslide_create(const char* filepath){
 		if(next_token_is_a_txt_parameter){
 			if (rs_starts_with_substring(&token, "x") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 4));
-				R_ASSERT(rs_convert_to_float(&token, &x));
+				int convert_result = rs_convert_to_float(&token, &x);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("x parameter at line %d is invalid, setting to 0.0.", line);
+					x = 0.0f;
+				}
+				if(x < 0.0f || 1.0f < x){
+					RLOGGER_WARN("x parameter at line %d is outside of valid bounds, setting to 0.0.", line);
+					x = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "y") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 4));
-				R_ASSERT(rs_convert_to_float(&token, &y));
+				int convert_result = rs_convert_to_float(&token, &y);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("y parameter at line %d is invalid, setting to 0.0.", line);
+					y = 0.0f;
+				}
+				if(y < 0.0f || 1.0f < y){
+					RLOGGER_WARN("y parameter at line %d is outside of valid bounds, setting to 0.0.", line);
+					y = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "color") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 8));
-				R_ASSERT(rs_convert_hex_to_uint(&token, &color));
+				int color_result = rs_convert_hex_to_uint(&token, &color);
+				if(color_result == RS_FAILURE){
+					RLOGGER_WARN("color parameter at line %d is invalid, setting to black.", line);
+					color = 0x00000000;
+				}
 			} else if (rs_starts_with_substring(&token, "text") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 7));
 				R_ASSERT(rs_trim_delimiter(&token, '"'));
 				R_ASSERT(rs_copy(&token, &text));
 			} else if (rs_starts_with_substring(&token, "font_size") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
-				R_ASSERT(rs_convert_to_int(&token, &font_size));
+				int convert_result = rs_convert_to_int(&token, &font_size);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("font_size parameter at line %d is invalid, setting to 20.", line);
+					font_size = 20;
+				}
+				if(font_size < 0 || 160 < font_size){
+					RLOGGER_WARN("font_size parameter at line %d is outside of bounds, setting to 20.", line);
+					font_size = 20;
+				}
+
 				rText text_result = rtext_create(text.buffer, x, y, font_size, color);
 				rdarray_push(&(slide.text_array), &text_result);
 				
@@ -97,16 +129,48 @@ rSlide rslide_create(const char* filepath){
 		}else if(next_token_is_a_img_parameter){
 			if (rs_starts_with_substring(&token, "x") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 4));
-				R_ASSERT(rs_convert_to_float(&token, &x));
+				int convert_result = rs_convert_to_float(&token, &x);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("x parameter at line %d is invalid, setting to 0.0.", line);
+					x = 0.0f;
+				}
+				if(x < 0.0f || 1.0f < x){
+					RLOGGER_WARN("x parameter at line %d is outside of valid bounds, setting to 0.0.", line);
+					x = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "y") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 4));
-				R_ASSERT(rs_convert_to_float(&token, &y));
+				int convert_result = rs_convert_to_float(&token, &y);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("y parameter at line %d is invalid, setting to 0.0.", line);
+					y = 0.0f;
+				}
+				if(y < 0.0f || 1.0f < y){
+					RLOGGER_WARN("y parameter at line %d is outside of valid bounds, setting to 0.0.", line);
+					y = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "width") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 8));
-				R_ASSERT(rs_convert_to_float(&token, &width));
+				int convert_result = rs_convert_to_float(&token, &width);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("width parameter at line %d is invalid, setting to 0.0.", line);
+					width = 0.0f;
+				}
+				if(width < 0.0f){
+					RLOGGER_WARN("width parameter at line %d is outside of bounds, setting to 0.0.", line);
+					width = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "height") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 9));
-				R_ASSERT(rs_convert_to_float(&token, &height));
+				int convert_result = rs_convert_to_float(&token, &height);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("height parameter at line %d is invalid, setting to 0.0.", line);
+					height = 0.0f;
+				}
+				if(height < 0.0f){
+					RLOGGER_WARN("height parameter at line %d is outside of bounds, setting to 0.0.", line);
+					height = 0.0f;
+				}
 			} else if (rs_starts_with_substring(&token, "file_path") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
 				R_ASSERT(rs_trim_delimiter(&token, '"'));
@@ -131,11 +195,16 @@ rSlide rslide_create(const char* filepath){
 		}else if(next_token_is_a_background_parameter){
 			if(rs_starts_with_substring(&token, "color") != RS_FAILURE){
 				R_ASSERT(rs_extract_right(&token, token.length - 8));
-				R_ASSERT(rs_convert_hex_to_uint(&token, &color));
+				int color_result = rs_convert_hex_to_uint(&token, &color);
+				if(color_result == RS_FAILURE){
+					RLOGGER_WARN("color parameter at line %d is invalid, setting to black.", line);
+					color = 0x00000000;
+				}
 				slide.background_color = color;
 			}
 		}
 		result_split = rs_split_by_delimiter(&file_contents, '\n', &token);
+		line++;
 	}
 
 	rs_delete(&text);
@@ -166,7 +235,6 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
    	R_ASSERT(global_state.window_height > 0);
 
    	rText text_result = {0};
-	text_result.text = text;
 	text_result.x = 2 * x - 1;
 	text_result.y = -(2 * y - 1);
 	text_result.font_size = font_size;
@@ -180,10 +248,8 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		return text_result;
 	}
 
-	SDL_Surface* text_surface = TTF_RenderText_Solid(font, text_result.text, (SDL_Color){COLOR_HEX_TO_UINT8s(text_result.color)});
-	if (text_surface && text_surface->pixels) {
-		text_result.pixel_data = text_surface->pixels;
-
+	SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(text_result.color)});
+	if (text_surface) {
 		SDL_Surface* alpha_image = SDL_CreateRGBSurface(SDL_SWSURFACE, text_surface->w, text_surface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
 		SDL_BlitSurface(text_surface, NULL, alpha_image, NULL);
 		SDL_FlipSurfaceVertical(alpha_image);
@@ -191,9 +257,9 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		texture_set_data(&text_result.texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 1);
 		SDL_FreeSurface(alpha_image);
 		
-		RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text_result.text);
+		RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
    	} else {
-   		RLOGGER_WARN("Failed to create SDL Surface for: %s", text_result.text);
+   		RLOGGER_WARN("Failed to create SDL Surface for: %s", text);
    		return text_result;
    	}
    	TTF_CloseFont(font);
@@ -210,7 +276,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		text_result.x + width_norm,  		text_result.y - height_norm, 		0.0f, 1.0f, 0.0f  // bot - right
 	};
 
-	RLOGGER_INFO("Vertices for: %s", text_result.text);
+	RLOGGER_INFO("Vertices for: %s", text);
 	RLOGGER_INFO("%s", "vertex[] = {");
 	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[0],   vertex[1],   vertex[2],   vertex[3],  vertex[4]);
 	RLOGGER_INFO("\t%f, %f, %f, %f, %f,", vertex[5],   vertex[6],   vertex[7],   vertex[8],  vertex[9]);
@@ -231,9 +297,6 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 
 void rtext_delete(rText* text){
 	if(!text){
-		// This assumes that SDL_Surface field order before the pixel data pointer is Uint32 flags; SDL_PixelFormat *format; int w, h; int pitch;
-		SDL_FreeSurface((void*)((char*)text->pixel_data - 3 * sizeof(int) - sizeof(SDL_PixelFormat*) - sizeof(Uint32)));
-		text->text = 0;
 		text->x = 0;
 		text->y = 0;
 		text->font_size = 0;
@@ -268,12 +331,12 @@ rImage rimage_create(const char* filepath, float x, float y, float width, float 
    	unsigned char *data = stbi_load(filepath, &width_file, &height_file, &nChannels, 0);
    	if (data) {
    		texture_set_data(&img_result.texture_id, data, width_file, height_file, 1);
-		img_result.pixel_data = data;
 		RLOGGER_INFO("Succesfully loaded image: %s", filepath);
    	} else {
    		RLOGGER_WARN("Failed to load texture: %s", filepath);
    		return img_result;
    	}
+   	stbi_image_free(data);
 
 	float vertex[] = {
 		//x    	 							y    								z     u    	v
@@ -306,8 +369,6 @@ rImage rimage_create(const char* filepath, float x, float y, float width, float 
 
 void rimage_delete(rImage* image){
 	if(!image){
-		stbi_image_free(image->pixel_data);
-		image->pixel_data = 0;
 		image->x = 0;
 		image->y = 0;
 		image->width = 0;

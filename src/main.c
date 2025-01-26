@@ -16,7 +16,7 @@ unsigned int g_slide_index = 0;
 unsigned int g_shader_id = 0;
 
 int main(void){
-	rLogger_init(RLOG_FILE_MODE);
+	rLogger_init(RLOG_TERMINAL_MODE);
 	
 	RLOGGER_INFO("sizeof(rText): %lu bytes", sizeof(rText));
 	RLOGGER_INFO("sizeof(rImage): %lu bytes", sizeof(rImage));

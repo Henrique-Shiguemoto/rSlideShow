@@ -18,7 +18,7 @@
 	x = 0.25 
 	y = 0.25 
 	color = 0x0000FFFF 
-	text = "Another test string" 
+	text = "Another test string"
 	font_size = 60
 }
 

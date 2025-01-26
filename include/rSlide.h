@@ -18,7 +18,6 @@
 									(((_color) >> 0)  & 0x000000FF)
 
 typedef struct rImage {
-	void* pixel_data;
 	float x;
 	float y;
 	float width;
@@ -29,8 +28,6 @@ typedef struct rImage {
 } rImage;
 
 typedef struct rText {
-	const char* text;
-	void* pixel_data;
 	float x;
 	float y;
 	int font_size;
