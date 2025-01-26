@@ -5,7 +5,6 @@ int g_app_running = 1;
 
 rSlide g_slides[2] = {0};
 
-// TODO(Rick): Create some sort of texture interface
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
@@ -38,10 +37,6 @@ int main(void){
 	}
 	shader_use(g_shader_id);
 	
-	// rm_mat4f orthographic_projection_matrix = rm_parallel_projection_3D(0.0f, global_state.window_width, 0.0f, global_state.window_height, -2.0, 2.0);
-	// // orthographic_projection_matrix = rm_transpose_mat4f(orthographic_projection_matrix);
-	// shader_set_mat4_uniform(g_shader_id, "projectionMatrix", orthographic_projection_matrix);
-
 	while(g_app_running){
 		handle_input(window);
 
@@ -233,16 +228,18 @@ void free_rslides(rSlide* slides, int slide_count) {
 
 void render_image_as_quad(rImage* image){
 	// can apply transformations here
-	glBindTexture(GL_TEXTURE_2D, image->texture_id);
+	texture_bind(&image->texture_id);
 	vao_bind(&image->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
+	texture_unbind();
 }
 
 void render_text_as_quad(rText* text){
 	// can apply transformations here
-	glBindTexture(GL_TEXTURE_2D, text->texture_id);
+	texture_bind(&text->texture_id);
 	vao_bind(&text->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
+	texture_unbind();
 }

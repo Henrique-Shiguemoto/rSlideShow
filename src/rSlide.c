@@ -172,12 +172,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 	text_result.font_size = font_size;
 	text_result.color = color;
 
-	glGenTextures(1, &text_result.texture_id);
-	glBindTexture(GL_TEXTURE_2D, text_result.texture_id);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	texture_create(&text_result.texture_id);
 
 	TTF_Font* font = TTF_OpenFont("assets/fonts/arcade-classic/ArcadeClassic.ttf", text_result.font_size);
 	if(font == NULL){
@@ -193,8 +188,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		SDL_BlitSurface(text_surface, NULL, alpha_image, NULL);
 		SDL_FlipSurfaceVertical(alpha_image);
 
-   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, text_surface->w, text_surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, alpha_image->pixels);
-		glGenerateMipmap(GL_TEXTURE_2D);
+		texture_set_data(&text_result.texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 1);
 		SDL_FreeSurface(alpha_image);
 		
 		RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text_result.text);
@@ -244,8 +238,11 @@ void rtext_delete(rText* text){
 		text->y = 0;
 		text->font_size = 0;
 		text->color = 0;
+		vao_delete(&text->vao_id);
 		text->vao_id = 0xB01DFACE;
+		vao_delete(&text->vbo_id);
 		text->vbo_id = 0xB01DFACE;
+		texture_delete(&text->texture_id);
 		text->texture_id = 0xB01DFACE;
 	}
 }
@@ -264,20 +261,13 @@ rImage rimage_create(const char* filepath, float x, float y, float width, float 
 	img_result.width  = 2.0f * (width / global_state.window_width);
 	img_result.height = 2.0f * (height / global_state.window_height);
 
-	glGenTextures(1, &img_result.texture_id);
-	glBindTexture(GL_TEXTURE_2D, img_result.texture_id);
+	texture_create(&img_result.texture_id);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
 	stbi_set_flip_vertically_on_load(1);
 	int width_file, height_file, nChannels;
    	unsigned char *data = stbi_load(filepath, &width_file, &height_file, &nChannels, 0);
    	if (data) {
-   		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_file, height_file, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
+   		texture_set_data(&img_result.texture_id, data, width_file, height_file, 1);
 		img_result.pixel_data = data;
 		RLOGGER_INFO("Succesfully loaded image: %s", filepath);
    	} else {
@@ -322,8 +312,11 @@ void rimage_delete(rImage* image){
 		image->y = 0;
 		image->width = 0;
 		image->height = 0;
+		vao_delete(&image->vao_id);
 		image->vao_id = 0xB01DFACE;
+		vao_delete(&image->vbo_id);
 		image->vbo_id = 0xB01DFACE;
+		texture_delete(&image->texture_id);
 		image->texture_id = 0xB01DFACE;
 	}
 }

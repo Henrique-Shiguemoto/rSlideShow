@@ -7,6 +7,7 @@
 #include "rStrlib.h"
 #include "rDarray.h"
 #include "rLogger.h"
+#include "rTexture.h"
 #include "rVBO.h"
 #include "rVAO.h"
 #include "rGlobal.h"

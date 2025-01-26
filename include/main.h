@@ -11,6 +11,7 @@
 #include "rDarray.h"
 #include "rShader.h"
 #include "rSlide.h"
+#include "rTexture.h"
 
 #define UNDEFINEED_GLBUFFER_VALUE 0xB01DFACE
 #define APP_DESIRED_FRAME_TIME_IN_MS (double)16.67

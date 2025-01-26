@@ -23,5 +23,5 @@
 }
 
 [BACKGROUND] = {
-	color = 0xFF0000FF
+	color = 0xFFFFFFFF
 }
