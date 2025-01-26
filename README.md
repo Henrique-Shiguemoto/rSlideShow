@@ -41,7 +41,8 @@ See the <code>.rslide</code> files in the <code>test_slides</code> folder for so
 
 ## Technologies Used
 
-- C99
+- C99 (gcc for now)
 - SDL2
 - SDL2_TTF
 - OpenGL
+- stb_image ([Sean Barret](https://github.com/nothings/stb))

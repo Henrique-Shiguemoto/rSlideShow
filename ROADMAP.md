@@ -7,3 +7,4 @@
 - [ ] Choose fonts among ttf fonts from system
 - [ ] Add a release build on Github
 - [ ] Support Linux
+- [ ] Compile the app on different compilers (clang and MSCV)
