@@ -1,7 +1,9 @@
 # rSlideShow ROADMAP
 
-[X] fullscreen support
-[] rslide parsing "space" independent (for now it cares about spaces and stuff)
-[] Layering
-[] Add TUI with simple commands for slide creation and editing
-[] Choose fonts among ttf fonts from system
+- [X] fullscreen support
+- [ ] rslide parsing "space" independent (for now it cares about spaces and stuff)
+- [ ] Layering
+- [ ] Add TUI with simple commands for slide creation and editing
+- [ ] Choose fonts among ttf fonts from system
+- [ ] Add a release build on Github
+- [ ] Support Linux
