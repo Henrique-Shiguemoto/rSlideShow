@@ -16,7 +16,7 @@ unsigned int g_slide_index = 0;
 unsigned int g_shader_id = 0;
 
 int main(void){
-	rLogger_init(RLOG_TERMINAL_MODE);
+	rLogger_init(RLOG_FILE_MODE);
 	
 	RLOGGER_INFO("sizeof(rText): %lu bytes", sizeof(rText));
 	RLOGGER_INFO("sizeof(rImage): %lu bytes", sizeof(rImage));
@@ -127,21 +127,42 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 void handle_input(SDL_Window* window){
 	static char g_left_arrow_was_down = 0;
 	static char g_right_arrow_was_down = 0;
+	static char f_key_was_down = 0;
+	static int window_is_fullscreen = 0;
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		const unsigned char* keyboardState = SDL_GetKeyboardState(NULL);
+
+		// Handling quitting app by pressing ESC button
 		g_app_running = !keyboardState[SDL_SCANCODE_ESCAPE];
+
+		// input for transitioning slides
 		char g_left_arrow_is_down = keyboardState[SDL_SCANCODE_LEFT];
 		char g_right_arrow_is_down = keyboardState[SDL_SCANCODE_RIGHT];
-
 		if(g_left_arrow_is_down && !g_left_arrow_was_down){
 			if(--g_slide_index == 0) { g_slide_index = 0; }
 		}else if(g_right_arrow_is_down && !g_right_arrow_was_down){
 			if(++g_slide_index >= global_state.slide_count) { g_slide_index = global_state.slide_count - 1; }
 		}
+		g_left_arrow_was_down = g_left_arrow_is_down;
+		g_right_arrow_was_down = g_right_arrow_is_down;
 
+		// quitting app
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
+
+		// handling fullscreen toggle by pressing the F key
+		char f_key_is_down = keyboardState[SDL_SCANCODE_F];
+		if(f_key_is_down && !f_key_was_down){
+			window_is_fullscreen = !window_is_fullscreen;
+			int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+			if(fullscreen_toggle_result < 0){
+				RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
+			}
+		}
+		f_key_was_down = f_key_is_down;
+
+		// handling window resize
 		if(event.type == SDL_WINDOWEVENT) { 
 			if(event.window.event == SDL_WINDOWEVENT_RESIZED){
 				int w, h;
@@ -151,9 +172,6 @@ void handle_input(SDL_Window* window){
 				glViewport(0, 0, global_state.window_width, global_state.window_height);
 			}
 		}
-
-		g_left_arrow_was_down = g_left_arrow_is_down;
-		g_right_arrow_was_down = g_right_arrow_is_down;
 	}
 }
 
