@@ -6,8 +6,6 @@ int g_app_running = 1;
 rSlide g_slides[2] = {0};
 
 // TODO(Rick): Create some sort of texture interface
-// TODO(Rick): Add some sort of rslide specifications in README.md
-// TODO(Rick): Add project roadmap as another .md file
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
