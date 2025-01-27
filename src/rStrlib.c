@@ -107,7 +107,7 @@ int rs_compare(rs_string* s1, rs_string* s2){
 	return RS_SUCCESS;
 }
 
-int rs_compare_to_cstr(rs_string* rs_str, char* cstr){
+int rs_compare_to_cstr(rs_string* rs_str, const char* cstr){
 	if(!rs_str || !rs_str->buffer || !cstr) return RS_FAILURE;
 
 	int cStrSize = rs_length(cstr);
@@ -135,7 +135,7 @@ int rs_compare_case_insensitive(rs_string* s1, rs_string* s2){
 	return RS_SUCCESS;
 }
 
-int rs_compare_to_cstr_case_insensitive(rs_string* rs_str, char* cstr){
+int rs_compare_to_cstr_case_insensitive(rs_string* rs_str, const char* cstr){
 	if(!rs_str || !rs_str->buffer || !cstr) return RS_FAILURE;
 
 	int cStrSize = rs_length(cstr);
@@ -704,7 +704,7 @@ int rs_count_substring(rs_string* s, const char* substring) {
 
 int rs_set(rs_string* s, const char* string){
 	int string_length = rs_length(string);
-	if(!s || !s->buffer) return RS_FAILURE;
+	if(!s) return RS_FAILURE;
 	if(string_length == 0){
 		s->buffer[0] = '\0';
 		s->length = 0;

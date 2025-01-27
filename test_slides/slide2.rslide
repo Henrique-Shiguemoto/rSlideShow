@@ -4,6 +4,7 @@
 	color = 0x00FF00FF 
 	text = "Hello World - Henrique - 2" 
 	font_size = 60
+	font = "hssahhuasuhahu"
 }
 
 [IMG] = {
@@ -20,6 +21,7 @@
 	color = 0x0000FFFF 
 	text = "Another test string"
 	font_size = 60
+	font = "hssahhuasuhahu"
 }
 
 [BACKGROUND] = {

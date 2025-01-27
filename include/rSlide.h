@@ -46,7 +46,7 @@ typedef struct rSlide {
 rSlide rslide_create(const char* filepath);
 void rslide_delete(rSlide* slide);
 
-rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color);
+rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color, const char* font);
 void rtext_delete(rText* text);
 
 rImage rimage_create(const char* filepath, float x, float y, float width, float height);

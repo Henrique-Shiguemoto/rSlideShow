@@ -22,6 +22,7 @@ Each .rslide file has three types of "entities", which are texts, images and bac
 	- color (in hexadecimal, starting with 0x)
 	- text (string surrounded by double quotes. e.g.: "Hello World")
 	- font_size (a non negative integer number)
+	- font (a string with the name of a font)
 
 - For image entities, they should start with the <code>[IMG]</code> string. The parameters are:
 	- (X, Y) positions (which go from (0.0, 0.0) (top-left corner) to (1.0, 1.0) (bottom-right corner))

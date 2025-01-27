@@ -3,6 +3,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+static int allowed_font_names_windows_count = 164;
+static const char* allowed_font_names_windows[] = {
+	"ANTQUAB", "ANTQUABI", "ANTQUAI", "arial", "arialbd", "arialbi", "ariali", "ARIALN", "ARIALNB", "ARIALNBI", "ARIALNI", "ariblk", "bahnschrift", "BKANT", "BOOKOS", "BOOKOSB", "BOOKOSBI", "BOOKOSI", "BSSYM7", "calibri", "calibrib", "calibrii", "calibril", "calibrili", "calibriz", "cambriab", "cambriai", "cambriaz", "Candara", "Candarab", "Candarai", "Candaral", "Candarali", "Candaraz", "CascadiaCode", "CascadiaMono", "CENTURY", "comic", "comicbd", "comici", "comicz", "consola", "consolab", "consolai", "consolaz", "constan", "constanb", "constani", "constanz", "corbel", "corbelb", "corbeli", "corbell", "corbelli", "corbelz", "cour", "courbd", "courbi", "couri", "DUBAI-BOLD", "DUBAI-LIGHT", "DUBAI-MEDIUM", "DUBAI-REGULAR", "ebrima", "ebrimabd", "framd", "framdit", 
+	"Gabriola", "gadugi", "gadugib", "GARA", "GARABD", "GARAIT", "georgia", "georgiab", "georgiai", "georgiaz", "GOTHIC", "GOTHICB", "GOTHICBI", "GOTHICI", "himalaya", "impact", "Inkfree", "javatext", "LeelaUIb", "LeelawUI", "LeelUIsl", "lucon", "l_10646", "malgun", "malgunbd", "malgunsl", "marlett", "micross", "mmrtext", "mmrtextb", "monbaiti", "msyi", "MTCORSVA", "MTEXTRA", "mvboli", "ntailu", "ntailub", "pala", "palab", "palabi", "palai", "phagspa", "phagspab", "REFSAN", "REFSPCL", "SansSerifCollection", "segmdl2", "SegoeIcons", "segoepr", "segoeprb", "segoesc", "segoescb", "segoeui", "segoeuib", "segoeuii", "segoeuil", "segoeuisl", "segoeuiz", "seguibl", "seguibli", "seguiemj", "seguihis", "seguili", "seguisb", "seguisbi", "seguisli", "seguisym", "SegUIVar",
+	"simsunb", "SimsunExtG", "SitkaVF-Italic", "SitkaVF", "sylfaen", "symbol", "tahoma", "tahomabd", "taile", "taileb", "times", "timesbd", "timesbi", "timesi", "trebuc", "trebucbd", "trebucbi", "trebucit", "verdana", "verdanab", "verdanai", "verdanaz", "webdings", "wingding", "WINGDNG2", "WINGDNG3", "yumin", "yumindb", "yuminl"
+};
+
 rSlide rslide_create(const char* filepath){
 	rio_file* file = rio_open_file(filepath, RIO_READ_MODE);
 	if(!file){
@@ -35,6 +42,7 @@ rSlide rslide_create(const char* filepath){
 	unsigned int color = 0;
 	int font_size = 0;
 	rs_string text = rs_create(NULL);
+	rs_string text2 = rs_create(NULL);
 	float width = 0.0f;
 	float height = 0.0f;
 
@@ -108,8 +116,27 @@ rSlide rslide_create(const char* filepath){
 					RLOGGER_WARN("font_size parameter at line %d is outside of bounds, setting to 20.", line);
 					font_size = 20;
 				}
+			}else if (rs_starts_with_substring(&token, "font") != RS_FAILURE){
+				R_ASSERT(rs_extract_right(&token, token.length - 7));
+				R_ASSERT(rs_trim_delimiter(&token, '"'));
 
-				rText text_result = rtext_create(text.buffer, x, y, font_size, color);
+				//check if font is available
+				int font_exists = 0;
+				for (int i = 0; i < allowed_font_names_windows_count; ++i){
+					if(rs_compare_to_cstr(&token, allowed_font_names_windows[i])){
+						font_exists = 1;
+						break;
+					}
+				}
+
+				if(font_exists == 0){
+					RLOGGER_WARN("font parameter at line %d isn't available, setting to arial.", line);
+					R_ASSERT(rs_set(&text2, "arial"));
+				}else{
+					R_ASSERT(rs_copy(&token, &text2));
+				}
+
+				rText text_result = rtext_create(text.buffer, x, y, font_size, color, text2.buffer);
 				rdarray_push(&(slide.text_array), &text_result);
 				
 				// We don't actually need to free the rstring here, because the only place we change 
@@ -208,6 +235,7 @@ rSlide rslide_create(const char* filepath){
 	}
 
 	rs_delete(&text);
+	rs_delete(&text2);
 	rs_delete(&token);
 	rs_delete(&file_contents);
 	rio_close_file(file);
@@ -229,8 +257,9 @@ void rslide_delete(rSlide* slide){
 	}
 }
 
-rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color){
+rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color, const char* font_name){
 	R_ASSERT(text != NULL);
+	R_ASSERT(font_name != NULL);
 	R_ASSERT(global_state.window_width > 0);
    	R_ASSERT(global_state.window_height > 0);
 
@@ -242,11 +271,19 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 
 	texture_create(&text_result.texture_id);
 
-	TTF_Font* font = TTF_OpenFont("assets/fonts/arcade-classic/ArcadeClassic.ttf", text_result.font_size);
+	rs_string path = rs_create("C:\\Windows\\Fonts\\");
+	rs_string font_name_string = rs_create(font_name);
+	rs_string font_extension_string = rs_create(".ttf");
+	R_ASSERT(rs_concatenate(&path, &font_name_string));
+	R_ASSERT(rs_concatenate(&path, &font_extension_string));
+	TTF_Font* font = TTF_OpenFont(path.buffer, text_result.font_size);
 	if(font == NULL){
 		RLOGGER_ERROR("TTF_OpenFont(): %s", TTF_GetError());
 		return text_result;
 	}
+	rs_delete(&font_extension_string);
+	rs_delete(&font_name_string);
+	rs_delete(&path);
 
 	SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(text_result.color)});
 	if (text_surface) {

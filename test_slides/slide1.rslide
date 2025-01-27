@@ -4,6 +4,7 @@
 	color = 0xff00ff00
 	text = "Henrique" 
 	font_size = 80
+	font = "arial"
 }
 
 [IMG] = {
