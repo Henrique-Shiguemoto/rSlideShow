@@ -3,12 +3,13 @@
 
 int g_app_running = 1;
 
-rSlide g_slides[2] = {0};
+rSlide g_slides[3] = {0};
 
 // this probably can be created by another program inside a folder and then the visualizer just reads the files inside it
 const char* filepaths[] = {
 	"test_slides/slide1.rslide",
-	"test_slides/slide2.rslide"
+	"test_slides/slide2.rslide",
+	"test_slides/slide3.rslide"
 };
 unsigned int g_filepaths_size = (sizeof(filepaths) / sizeof(filepaths[0]));
 unsigned long int g_performance_frequency = 0;

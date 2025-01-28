@@ -1,0 +1,29 @@
+[TXT] = {
+	x = -10.0 
+	y = 2.0
+	color = yellow
+	text = Henrique
+	font_size = 200
+	font = "coolfont23000"
+}
+
+[TXT] = {
+	x = Hello
+	y = World
+	color = ff00ff00
+	text = ------------
+	font_size = -10
+	font = 10
+}
+
+[IMG] = {
+	x = 0.2
+ 	y = 0.5
+ 	width = -100
+ 	height = 800
+ 	file_path = "random_png.png"
+}
+
+[BACKGROUND] = {
+	color = red
+}

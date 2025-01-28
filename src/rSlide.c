@@ -48,7 +48,6 @@ rSlide rslide_create(const char* filepath){
 
 	RLOGGER_INFO("Parsing %s", filepath);
 	
-	// TODO(Rick): create another .rslide file in the test_slides folder, but with all wrong parameters, just to see what happens and if the logger is correct
 	while(result_split != RS_FAILURE){
 		rs_trim(&token);
 		if(rs_starts_with_substring(&token, "[TXT]")){
