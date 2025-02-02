@@ -15,6 +15,8 @@ unsigned long int g_performance_frequency = 0;
 unsigned int g_slide_index = 0;
 unsigned int g_shader_id = 0;
 
+char g_console_is_open = 0;
+
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
 	
@@ -126,34 +128,42 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 }
 
 void handle_input(SDL_Window* window){
-	static char g_left_arrow_was_down = 0;
-	static char g_right_arrow_was_down = 0;
+	static char left_arrow_was_down = 0;
+	static char right_arrow_was_down = 0;
 	static char f_key_was_down = 0;
-	static int window_is_fullscreen = 0;
+	static char c_key_was_down = 0;
+	static char window_is_fullscreen = 0;
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		const unsigned char* keyboardState = SDL_GetKeyboardState(NULL);
+		const unsigned char* keyboard_state = SDL_GetKeyboardState(NULL);
 
 		// Handling quitting app by pressing ESC button
-		g_app_running = !keyboardState[SDL_SCANCODE_ESCAPE];
+		g_app_running = !keyboard_state[SDL_SCANCODE_ESCAPE];
 
 		// input for transitioning slides
-		char g_left_arrow_is_down = keyboardState[SDL_SCANCODE_LEFT];
-		char g_right_arrow_is_down = keyboardState[SDL_SCANCODE_RIGHT];
-		if(g_left_arrow_is_down && !g_left_arrow_was_down){
+		char left_arrow_is_down = keyboard_state[SDL_SCANCODE_LEFT];
+		char right_arrow_is_down = keyboard_state[SDL_SCANCODE_RIGHT];
+		if(left_arrow_is_down && !left_arrow_was_down){
 			if(--g_slide_index == 0) { g_slide_index = 0; }
-		}else if(g_right_arrow_is_down && !g_right_arrow_was_down){
+		}else if(right_arrow_is_down && !right_arrow_was_down){
 			if(++g_slide_index >= global_state.slide_count) { g_slide_index = global_state.slide_count - 1; }
 		}
-		g_left_arrow_was_down = g_left_arrow_is_down;
-		g_right_arrow_was_down = g_right_arrow_is_down;
+		left_arrow_was_down = left_arrow_is_down;
+		right_arrow_was_down = right_arrow_is_down;
+
+		// handling console toggle by pressing the C key
+		char c_key_is_down = keyboard_state[SDL_SCANCODE_C];
+		if(c_key_is_down && !c_key_was_down){
+			g_console_is_open = !g_console_is_open;
+		}
+		c_key_was_down = c_key_is_down;
 
 		// quitting app
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
 
 		// handling fullscreen toggle by pressing the F key
-		char f_key_is_down = keyboardState[SDL_SCANCODE_F];
+		char f_key_is_down = keyboard_state[SDL_SCANCODE_F];
 		if(f_key_is_down && !f_key_was_down){
 			window_is_fullscreen = !window_is_fullscreen;
 			int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
@@ -189,6 +199,9 @@ void render_graphics(SDL_Window** window){
 		rEntity* entity_to_render = (rEntity*)rdarray_at(&slide.entity_array, i);
 		render_entity(entity_to_render);
 	}
+
+	// TODO(Rick): Render console as a simple quad with some transparency on the bottom of the screen and its width scales to the window's width
+	// RLOGGER_INFO("%s", g_console_is_open ? "Console is opened" : "Console isn't opened");
 	
 	SDL_GL_SwapWindow(*window);
 }
