@@ -2,7 +2,7 @@
 
 - [X] fullscreen support
 - [X] Choose fonts among ttf fonts from system
-- [ ] Layering
+- [X] Layering
 - [ ] Add TUI with simple commands for slide creation and editing
 - [ ] Add a release build on Github
 - [ ] Support Linux

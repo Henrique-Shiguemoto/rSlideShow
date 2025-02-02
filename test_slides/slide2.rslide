@@ -5,26 +5,26 @@
 	text = "Hello World - Henrique - 2" 
 	font_size = 60
 	font = "arial"
-	layer = 0
+	layer = 3
 }
 
 [IMG] = {
-	x = 0.75 
-	y = 0.75 
+	x = 0.1
+	y = 0.1
 	width = 64 
 	height = 64 
 	file_path = "test_slides/imgs_for_presentation/spaceship.png"
-	layer = 1
+	layer = 2
 }
 
 [TXT] = {
-	x = 0.25 
-	y = 0.25 
+	x = 0.1
+	y = 0.1
 	color = 0x0000FFFF 
 	text = "Another test string"
 	font_size = 60
 	font = "arial"
-	layer = 2
+	layer = 1
 }
 
 [BACKGROUND] = {

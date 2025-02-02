@@ -1,11 +1,11 @@
 [TXT] = {
-	x = 0.0 
-	y = 0.0 
+	x = 0.7 
+	y = 0.7 
 	color = 0xff00ff00
 	text = "Henrique" 
 	font_size = 80
 	font = "arial"
-	layer = 0
+	layer = 4
 }
 
 [IMG] = {
@@ -18,8 +18,8 @@
 }
 
 [IMG] = {
-	x = 0.0
- 	y = 0.0
+	x = 0.25
+ 	y = 0.25
  	width = 300
  	height = 300
  	file_path = "test_slides/imgs_for_presentation/awesomeface.png"

@@ -46,6 +46,7 @@ rSlide rslide_create(const char* filepath){
 	float height = 0.0f;
 	int layer = 0;
 	int max_layer = -1;
+	int min_layer = 2147483647;
 
 	RLOGGER_INFO("Parsing %s", filepath);
 	
@@ -150,6 +151,9 @@ rSlide rslide_create(const char* filepath){
 				if(layer > max_layer){
 					max_layer = layer;
 				}
+				if(layer < min_layer){
+					min_layer = layer;
+				}
 
 				// Creating rdarray item
 				rText text_result = rtext_create(text.buffer, x, y, font_size, color, text2.buffer, layer);
@@ -235,6 +239,9 @@ rSlide rslide_create(const char* filepath){
 				if(layer > max_layer){
 					max_layer = layer;
 				}
+				if(layer < min_layer){
+					min_layer = layer;
+				}
 
 				// Creating rdarray item
 				rImage img_result = rimage_create(text.buffer, x, y, width, height, layer);
@@ -271,7 +278,41 @@ rSlide rslide_create(const char* filepath){
 		line++;
 	}
 
-	// TODO: sort entities (rText and rImage) by layer, Counting Sort
+	// Sorting entities by layers, bubble sort
+	rEntity temp_entity = (rEntity){0};
+	for (int i = 0; i < slide.entity_array.length - 1; ++i) {
+		int swapped_elements = 0;
+		for (int j = 0; j < slide.entity_array.length - i - 1; ++j){
+			rEntity* entity1 = (rEntity*)rdarray_at(&slide.entity_array, j);
+			rEntity* entity2 = (rEntity*)rdarray_at(&slide.entity_array, j + 1);
+		
+			int layer1 = 0;
+			int layer2 = 0;
+			
+			if (entity1->tag == R_ENTITY_IMAGE) { 
+				layer1 = entity1->data.image.layer; 
+			} else if (entity1->tag == R_ENTITY_TEXT) { 
+				layer1 = entity1->data.text.layer;
+			}
+
+			if (entity2->tag == R_ENTITY_IMAGE) { 
+				layer2 = entity2->data.image.layer;
+			} else if (entity2->tag == R_ENTITY_TEXT) { 
+				layer2 = entity2->data.text.layer;
+			}
+			
+			if(layer1 > layer2){
+				temp_entity = *entity1;
+				*entity1 = *entity2;
+				*entity2 = temp_entity;
+				swapped_elements = 1;
+			}
+			temp_entity = (rEntity){0};
+		}
+		if(!swapped_elements){
+			break;
+		}
+	}
 
 	rs_delete(&text);
 	rs_delete(&text2);
