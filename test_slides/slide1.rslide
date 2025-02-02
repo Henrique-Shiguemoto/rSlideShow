@@ -5,6 +5,7 @@
 	text = "Henrique" 
 	font_size = 80
 	font = "arial"
+	layer = 0
 }
 
 [IMG] = {
@@ -13,6 +14,7 @@
  	width = 300
  	height = 300
  	file_path = "test_slides/imgs_for_presentation/awesomeface.png"
+ 	layer = 1
 }
 
 [IMG] = {
@@ -21,6 +23,7 @@
  	width = 300
  	height = 300
  	file_path = "test_slides/imgs_for_presentation/awesomeface.png"
+ 	layer = 2
 }
 
 [BACKGROUND] = {

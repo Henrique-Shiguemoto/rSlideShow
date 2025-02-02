@@ -5,6 +5,7 @@
 	text = "Hello World - Henrique - 2" 
 	font_size = 60
 	font = "arial"
+	layer = 0
 }
 
 [IMG] = {
@@ -13,6 +14,7 @@
 	width = 64 
 	height = 64 
 	file_path = "test_slides/imgs_for_presentation/spaceship.png"
+	layer = 1
 }
 
 [TXT] = {
@@ -22,6 +24,7 @@
 	text = "Another test string"
 	font_size = 60
 	font = "arial"
+	layer = 2
 }
 
 [BACKGROUND] = {

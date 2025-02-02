@@ -1,4 +1,3 @@
-
 #include "main.h"
 
 int g_app_running = 1;
@@ -21,6 +20,7 @@ int main(void){
 	
 	RLOGGER_INFO("sizeof(rText): %lu bytes", sizeof(rText));
 	RLOGGER_INFO("sizeof(rImage): %lu bytes", sizeof(rImage));
+	RLOGGER_INFO("sizeof(rEntity): %lu bytes", sizeof(rEntity));
 	RLOGGER_INFO("Slides count: %i slides", global_state.slide_count);
 	RLOGGER_INFO("Filepath count: %i filepaths", g_filepaths_size);
 
@@ -184,16 +184,10 @@ void render_graphics(SDL_Window** window){
 	glClearColor(COLOR_HEX_TO_FLOATS(slide.background_color));
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// render images
-	for(int i = 0; i < slide.image_array.length; i++){
-		rImage* image_to_render = (rImage*)rdarray_at(&slide.image_array, i);
-		render_image_as_quad(image_to_render);
-	}
-
-	// render texts
-	for(int i = 0; i < slide.text_array.length; i++){
-		rText* text_to_render = (rText*)rdarray_at(&slide.text_array, i);
-		render_text_as_quad(text_to_render);
+	// render entities
+	for(int i = 0; i < slide.entity_array.length; i++){
+		rEntity* entity_to_render = (rEntity*)rdarray_at(&slide.entity_array, i);
+		render_entity(entity_to_render);
 	}
 	
 	SDL_GL_SwapWindow(*window);
@@ -231,7 +225,7 @@ int parse_rslide_files(rSlide* slides, int slide_count, const char** filepaths) 
 
 	for (int i = 0; i < slide_count; ++i) {
 		slides[i] = rslide_create(filepaths[i]);
-		if(slides[i].image_array.length == 0 && slides[i].text_array.length == 0 && slides[i].background_color == 0){
+		if(slides[i].entity_array.length == 0 && slides[i].background_color == 0){
 			return 0;
 		}
 	}
@@ -261,4 +255,14 @@ void render_text_as_quad(rText* text){
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
 	texture_unbind();
+}
+
+void render_entity(rEntity* entity){
+	if(entity->tag == R_ENTITY_IMAGE){
+		render_image_as_quad(&entity->data.image);
+	}else if(entity->tag == R_ENTITY_TEXT){
+		render_text_as_quad(&entity->data.text);
+	}else{
+		RLOGGER_WARN("%s", "Unknow entity tag in render_entity()");
+	}
 }

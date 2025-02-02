@@ -24,8 +24,7 @@ rSlide rslide_create(const char* filepath){
 	}
 
 	rSlide slide = {0};
-	slide.text_array = rdarray_create(sizeof(rText));
-	slide.image_array = rdarray_create(sizeof(rImage));
+	slide.entity_array = rdarray_create(sizeof(rEntity));
 	
 	R_ASSERT(rs_remove_delimiter(&file_contents, '\r'));
 	R_ASSERT(rs_remove_delimiter(&file_contents, '\t'));
@@ -45,6 +44,8 @@ rSlide rslide_create(const char* filepath){
 	rs_string text2 = rs_create(NULL);
 	float width = 0.0f;
 	float height = 0.0f;
+	int layer = 0;
+	int max_layer = -1;
 
 	RLOGGER_INFO("Parsing %s", filepath);
 	
@@ -134,9 +135,26 @@ rSlide rslide_create(const char* filepath){
 				}else{
 					R_ASSERT(rs_copy(&token, &text2));
 				}
+			}else if(rs_starts_with_substring(&token, "layer") != RS_FAILURE){
+				R_ASSERT(rs_extract_right(&token, token.length - 8));
+				int convert_result = rs_convert_to_int(&token, &layer);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("layer parameter at line %d is invalid, setting to 0.", line);
+					layer = 0;
+				}
+				if(layer < 0){
+					RLOGGER_WARN("layer parameter at line %d is outside of bounds, setting to 0.", line);
+					layer = 0;
+				}
 
-				rText text_result = rtext_create(text.buffer, x, y, font_size, color, text2.buffer);
-				rdarray_push(&(slide.text_array), &text_result);
+				if(layer > max_layer){
+					max_layer = layer;
+				}
+
+				// Creating rdarray item
+				rText text_result = rtext_create(text.buffer, x, y, font_size, color, text2.buffer, layer);
+				rEntity entity_text_result = (rEntity){.tag = R_ENTITY_TEXT, .data = {.text = text_result}};
+				rdarray_push(&(slide.entity_array), &entity_text_result);
 				
 				// We don't actually need to free the rstring here, because the only place we change 
 				// 		it is in the rs_copy function call, which already frees the memory before copying,
@@ -146,6 +164,7 @@ rSlide rslide_create(const char* filepath){
 				y = 0.0;
 				font_size = 0;
 				color = 0;
+				layer = 0;
 
 				// Just to make sure, I'm going to set both flags to 0
 				next_token_is_a_txt_parameter = 0;
@@ -201,8 +220,26 @@ rSlide rslide_create(const char* filepath){
 				R_ASSERT(rs_extract_right(&token, token.length - 12));
 				R_ASSERT(rs_trim_delimiter(&token, '"'));
 				R_ASSERT(rs_copy(&token, &text));
-				rImage img_result = rimage_create(text.buffer, x, y, width, height);
-				rdarray_push(&(slide.image_array), &img_result);
+			} else if (rs_starts_with_substring(&token, "layer") != RS_FAILURE) {
+				R_ASSERT(rs_extract_right(&token, token.length - 8));
+				int convert_result = rs_convert_to_int(&token, &layer);
+				if(convert_result == RS_FAILURE){
+					RLOGGER_WARN("layer parameter at line %d is invalid, setting to 0.", line);
+					layer = 0;
+				}
+				if(layer < 0){
+					RLOGGER_WARN("layer parameter at line %d is outside of bounds, setting to 0.", line);
+					layer = 0;
+				}
+
+				if(layer > max_layer){
+					max_layer = layer;
+				}
+
+				// Creating rdarray item
+				rImage img_result = rimage_create(text.buffer, x, y, width, height, layer);
+				rEntity entity_img_result = (rEntity){.tag = R_ENTITY_IMAGE, .data = {.image = img_result}};
+				rdarray_push(&(slide.entity_array), &entity_img_result);
 
 				// We don't actually need to free the rstring here, because the only place we change 
 				// 		it is in the rs_copy function call, which already frees the memory before copying,
@@ -212,14 +249,15 @@ rSlide rslide_create(const char* filepath){
 				y = 0.0;
 				width = 0.0;
 				height = 0.0;
+				layer = 0;
 
 				// Just to make sure, I'm going to set both flags to 0
 				next_token_is_a_txt_parameter = 0;
 				next_token_is_a_img_parameter = 0;
 				next_token_is_a_background_parameter = 0;
 			}
-		}else if(next_token_is_a_background_parameter){
-			if(rs_starts_with_substring(&token, "color") != RS_FAILURE){
+		} else if (next_token_is_a_background_parameter) {
+			if (rs_starts_with_substring(&token, "color") != RS_FAILURE) {
 				R_ASSERT(rs_extract_right(&token, token.length - 8));
 				int color_result = rs_convert_hex_to_uint(&token, &color);
 				if(color_result == RS_FAILURE){
@@ -233,6 +271,8 @@ rSlide rslide_create(const char* filepath){
 		line++;
 	}
 
+	// TODO: sort entities (rText and rImage) by layer, Counting Sort
+
 	rs_delete(&text);
 	rs_delete(&text2);
 	rs_delete(&token);
@@ -243,20 +283,23 @@ rSlide rslide_create(const char* filepath){
 
 void rslide_delete(rSlide* slide){
 	if(slide){
-		for(int i = 0; i < slide->image_array.length; i++){
-			rimage_delete((rImage*)rdarray_at(&slide->image_array, i));
-		}
-		for(int i = 0; i < slide->text_array.length; i++){
-			rtext_delete((rText*)rdarray_at(&slide->text_array, i));
+		for(int i = 0; i < slide->entity_array.length; i++){
+			rEntity* entity = (rEntity*)rdarray_at(&slide->entity_array, i);
+			if(entity->tag == R_ENTITY_IMAGE){
+				rimage_delete(&entity->data.image);
+			}else if(entity->tag == R_ENTITY_TEXT){
+				rtext_delete(&entity->data.text);
+			}else{
+				RLOGGER_WARN("%s", "Unknow entity tag in rslide_delete()");
+			}
 		}
 
-		rdarray_delete(&(slide->image_array));
-		rdarray_delete(&(slide->text_array));
+		rdarray_delete(&(slide->entity_array));
 		slide->background_color = 0;
 	}
 }
 
-rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color, const char* font_name){
+rText rtext_create(const char* text, float x, float y, int font_size, unsigned int color, const char* font_name, int layer){
 	R_ASSERT(text != NULL);
 	R_ASSERT(font_name != NULL);
 	R_ASSERT(global_state.window_width > 0);
@@ -267,6 +310,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 	text_result.y = -(2 * y - 1);
 	text_result.font_size = font_size;
 	text_result.color = color;
+	text_result.layer = layer;
 
 	texture_create(&text_result.texture_id);
 
@@ -339,19 +383,20 @@ void rtext_delete(rText* text){
 		text->color = 0;
 		vao_delete(&text->vao_id);
 		text->vao_id = 0xB01DFACE;
-		vao_delete(&text->vbo_id);
+		vbo_delete(&text->vbo_id);
 		text->vbo_id = 0xB01DFACE;
 		texture_delete(&text->texture_id);
 		text->texture_id = 0xB01DFACE;
 	}
 }
 
-rImage rimage_create(const char* filepath, float x, float y, float width, float height){
+rImage rimage_create(const char* filepath, float x, float y, float width, float height, int layer){
 	R_ASSERT(filepath != NULL);
 	R_ASSERT(global_state.window_width > 0);
    	R_ASSERT(global_state.window_height > 0);
 
 	rImage img_result = {0};
+	img_result.layer = layer;
 	// converted to be normalized [-1, 1]
 	img_result.x = 2 * x - 1;
 	img_result.y = -(2 * y - 1);
@@ -411,7 +456,7 @@ void rimage_delete(rImage* image){
 		image->height = 0;
 		vao_delete(&image->vao_id);
 		image->vao_id = 0xB01DFACE;
-		vao_delete(&image->vbo_id);
+		vbo_delete(&image->vbo_id);
 		image->vbo_id = 0xB01DFACE;
 		texture_delete(&image->texture_id);
 		image->texture_id = 0xB01DFACE;
