@@ -25,10 +25,10 @@ float g_console_vertices[] = {
 	//x      y      z
 	-1.00f, -1.00f, 0.00f, // bottom - left
 	 1.00f, -1.00f, 0.00f, // bottom - right
-	-1.00f, -0.92f, 0.00f, // top - left
-	-1.00f, -0.92f, 0.00f, // top - left
+	-1.00f, -0.90f, 0.00f, // top - left
+	-1.00f, -0.90f, 0.00f, // top - left
 	 1.00f, -1.00f, 0.00f, // bottom - right
-	 1.00f, -0.92f, 0.00f  // top - right
+	 1.00f, -0.90f, 0.00f  // top - right
 };
 char* g_console_text_buffer = NULL;
 

@@ -26,7 +26,7 @@ unsigned int shader_create(const char* vertex_shader_path, const char* fragment_
 	glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &success);
 	if(!success){
 		glGetShaderInfoLog(vertexShaderID, 512, NULL, infoLog);
-		RLOGGER_WARN("Failed to compile vertex shader: %s", infoLog);
+		RLOGGER_WARN("Failed to compile vertex shader (%s): %s", vertex_shader_path, infoLog);
 	}
 
 	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -35,7 +35,7 @@ unsigned int shader_create(const char* vertex_shader_path, const char* fragment_
 	glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &success);
 	if(!success){
 		glGetShaderInfoLog(fragmentShaderID, 512, NULL, infoLog);
-		RLOGGER_WARN("Failed to compile fragment shader: %s", infoLog);
+		RLOGGER_WARN("Failed to compile fragment shader (%s): %s", fragment_shader_path, infoLog);
 	}
 
 	unsigned int shader_program_id = glCreateProgram();
