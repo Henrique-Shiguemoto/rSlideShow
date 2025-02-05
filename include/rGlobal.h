@@ -1,13 +1,12 @@
 #ifndef R_GLOBAL_H
 #define R_GLOBAL_H
 
-#include "SDL2/SDL_ttf.h"
-
 typedef struct rGlobal {
 	const char* app_name;
 	float window_width;
 	float window_height;
-	unsigned int slide_count;
+	int slide_count;
+	const int console_text_buffer_max_size;
 } rGlobal;
 
 extern rGlobal global_state;

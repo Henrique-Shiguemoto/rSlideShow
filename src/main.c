@@ -10,12 +10,27 @@ const char* filepaths[] = {
 	"test_slides/slide2.rslide",
 	"test_slides/slide3.rslide"
 };
-unsigned int g_filepaths_size = (sizeof(filepaths) / sizeof(filepaths[0]));
+int g_filepaths_size = (sizeof(filepaths) / sizeof(filepaths[0]));
 unsigned long int g_performance_frequency = 0;
-unsigned int g_slide_index = 0;
-unsigned int g_shader_id = 0;
+int g_slide_index = 0;
+int g_shader_id = 0;
 
 char g_console_is_open = 0;
+
+// TODO(Rick): refactor console variables
+unsigned int g_console_vao_id = 0;
+unsigned int g_console_vbo_id = 0;
+unsigned int g_console_shader = 0;
+float g_console_vertices[] = {
+	//x      y      z
+	-1.00f, -1.00f, 0.00f, // bottom - left
+	 1.00f, -1.00f, 0.00f, // bottom - right
+	-1.00f, -0.92f, 0.00f, // top - left
+	-1.00f, -0.92f, 0.00f, // top - left
+	 1.00f, -1.00f, 0.00f, // bottom - right
+	 1.00f, -0.92f, 0.00f  // top - right
+};
+char* g_console_text_buffer = NULL;
 
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
@@ -38,7 +53,16 @@ int main(void){
 		RLOGGER_ERROR("%s", "Couldn't create shader");
 		g_app_running = 0;
 	}
-	shader_use(g_shader_id);
+
+	vao_create(&g_console_vao_id);
+	vao_bind(&g_console_vao_id);
+	vbo_create(&g_console_vbo_id, g_console_vertices, sizeof(g_console_vertices));
+	vao_define_vbo_layout(&g_console_vbo_id, 0, 3, 3 * sizeof(float), 0); // positions
+	g_console_shader = shader_create("shaders/console.vs", "shaders/console.fs");
+	if(g_console_shader == 0) {
+		RLOGGER_ERROR("%s", "Couldn't create shader");
+		g_app_running = 0;
+	}
 	
 	while(g_app_running){
 		handle_input(window);
@@ -124,6 +148,13 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	}
 	RLOGGER_INFO("%s", "Parsed .rslides");
 
+	g_console_text_buffer = malloc(global_state.console_text_buffer_max_size);
+	if(!g_console_text_buffer){
+		RLOGGER_ERROR("%s", "malloc() has failed");
+		return 0;
+	}
+	RLOGGER_INFO("%s", "Allocated console text buffer");
+
 	return 1;
 }
 
@@ -145,9 +176,13 @@ void handle_input(SDL_Window* window){
 		char left_arrow_is_down = keyboard_state[SDL_SCANCODE_LEFT];
 		char right_arrow_is_down = keyboard_state[SDL_SCANCODE_RIGHT];
 		if(left_arrow_is_down && !left_arrow_was_down){
-			if(--g_slide_index == 0) { g_slide_index = 0; }
+			int new_slide_index = g_slide_index - 1;
+			if(new_slide_index < 0) { new_slide_index = 0; }
+			g_slide_index = new_slide_index;
 		}else if(right_arrow_is_down && !right_arrow_was_down){
-			if(++g_slide_index >= global_state.slide_count) { g_slide_index = global_state.slide_count - 1; }
+			int new_slide_index = g_slide_index + 1;
+			if(new_slide_index >= global_state.slide_count) { new_slide_index = global_state.slide_count - 1; }
+			g_slide_index = new_slide_index;
 		}
 		left_arrow_was_down = left_arrow_is_down;
 		right_arrow_was_down = right_arrow_is_down;
@@ -201,7 +236,10 @@ void render_graphics(SDL_Window** window){
 	}
 
 	// TODO(Rick): Render console as a simple quad with some transparency on the bottom of the screen and its width scales to the window's width
-	// RLOGGER_INFO("%s", g_console_is_open ? "Console is opened" : "Console isn't opened");
+	// TODO(Rick): make console quad show transparency
+	if(g_console_is_open){
+		render_console();
+	}
 	
 	SDL_GL_SwapWindow(*window);
 }
@@ -209,6 +247,9 @@ void render_graphics(SDL_Window** window){
 void quit_app(SDL_Window** window, SDL_GLContext* gl_context) {
 	R_ASSERT(*window);
 	R_ASSERT(*gl_context);
+
+	free(g_console_text_buffer);
+	RLOGGER_INFO("%s", "Freed console text buffer");
 
 	free_rslides(g_slides, global_state.slide_count);
 	RLOGGER_INFO("%s", "Deleted Slides");
@@ -254,6 +295,7 @@ void free_rslides(rSlide* slides, int slide_count) {
 
 void render_image_as_quad(rImage* image){
 	// can apply transformations here
+	shader_use(g_shader_id);
 	texture_bind(&image->texture_id);
 	vao_bind(&image->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -263,6 +305,7 @@ void render_image_as_quad(rImage* image){
 
 void render_text_as_quad(rText* text){
 	// can apply transformations here
+	shader_use(g_shader_id);
 	texture_bind(&text->texture_id);
 	vao_bind(&text->vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -278,4 +321,17 @@ void render_entity(rEntity* entity){
 	}else{
 		RLOGGER_WARN("%s", "Unknow entity tag in render_entity()");
 	}
+}
+
+void render_console(){
+	float console_width = 0.0f;
+	float console_height = 0.0f;
+
+	// render the quad first
+	shader_use(g_console_shader);
+	vao_bind(&g_console_vao_id);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	vao_unbind();
+	
+	// render the internal text after
 }

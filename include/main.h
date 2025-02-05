@@ -24,6 +24,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 void handle_input(SDL_Window* window);
 void render_graphics(SDL_Window** window);
 void render_entity(rEntity* entity);
+void render_console();
 void render_image_as_quad(rImage* image);
 void render_text_as_quad(rText* text);
 void quit_app(SDL_Window** window, SDL_GLContext* gl_context);

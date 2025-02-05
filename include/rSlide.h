@@ -3,6 +3,9 @@
 
 #include <glad/glad.h>
 
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_ttf.h"
+
 #include "rInout.h"
 #include "rStrlib.h"
 #include "rDarray.h"
@@ -67,6 +70,6 @@ void rtext_delete(rText* text);
 rImage rimage_create(const char* filepath, float x, float y, float width, float height, int layer);
 void rimage_delete(rImage* image);
 
-int SDL_FlipSurfaceVertical(SDL_Surface *surface);
+int SDL_FlipSurfaceVertical(SDL_Surface* surface);
 
 #endif // R_SLIDE_H 
