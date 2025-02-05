@@ -31,6 +31,7 @@ float g_console_vertices[] = {
 	 1.00f, -0.90f, 0.00f  // top - right
 };
 char* g_console_text_buffer = NULL;
+int g_console_buffer_index = 0;
 
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
@@ -88,7 +89,8 @@ int main(void){
 		double virtual_delta_time_us = (virtual_delta_ticks * 1000000) / g_performance_frequency;
 		double virtual_delta_time_ms = virtual_delta_time_us / 1000;
 		double virtual_fps = 1000.0 / virtual_delta_time_ms;
-		RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
+		// RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
+		RLOGGER_INFO("%s", g_console_text_buffer);
 	}
 
 	quit_app(&window, &context);
@@ -148,7 +150,7 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	}
 	RLOGGER_INFO("%s", "Parsed .rslides");
 
-	g_console_text_buffer = malloc(global_state.console_text_buffer_max_size);
+	g_console_text_buffer = calloc(global_state.console_text_buffer_max_size, sizeof(char));
 	if(!g_console_text_buffer){
 		RLOGGER_ERROR("%s", "malloc() has failed");
 		return 0;
@@ -159,18 +161,17 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 }
 
 void handle_input(SDL_Window* window){
+	// These are used for toggle behavior
 	static char left_arrow_was_down = 0;
 	static char right_arrow_was_down = 0;
 	static char f_key_was_down = 0;
-	static char c_key_was_down = 0;
+	static char escape_key_was_down = 0;
+	static char return_key_was_down = 0;
 	static char window_is_fullscreen = 0;
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		const unsigned char* keyboard_state = SDL_GetKeyboardState(NULL);
-
-		// Handling quitting app by pressing ESC button
-		g_app_running = !keyboard_state[SDL_SCANCODE_ESCAPE];
 
 		// input for transitioning slides
 		char left_arrow_is_down = keyboard_state[SDL_SCANCODE_LEFT];
@@ -187,12 +188,44 @@ void handle_input(SDL_Window* window){
 		left_arrow_was_down = left_arrow_is_down;
 		right_arrow_was_down = right_arrow_is_down;
 
-		// handling console toggle by pressing the C key
-		char c_key_is_down = keyboard_state[SDL_SCANCODE_C];
-		if(c_key_is_down && !c_key_was_down){
+		// handling console toggle by pressing the ESCAPE key
+		char escape_key_is_down = keyboard_state[SDL_SCANCODE_ESCAPE];
+		if(escape_key_is_down && !escape_key_was_down){
 			g_console_is_open = !g_console_is_open;
 		}
-		c_key_was_down = c_key_is_down;
+		escape_key_was_down = escape_key_is_down;
+
+		// handling text input when console is opened
+		char return_key_is_down = keyboard_state[SDL_SCANCODE_RETURN];
+		char backspace_key_is_down = keyboard_state[SDL_SCANCODE_BACKSPACE];
+		if(g_console_is_open){
+			// Appending characters to console buffer
+			if(event.type == SDL_TEXTINPUT){
+				int string_length = rs_length(event.text.text);
+				int amount_left = global_state.console_text_buffer_max_size - g_console_buffer_index + 1;
+				if(string_length > amount_left){ string_length = amount_left; }
+				memcpy(g_console_text_buffer + g_console_buffer_index, event.text.text, string_length);
+				g_console_buffer_index += string_length;
+			}
+
+			// Popping characters from console buffer
+			if(backspace_key_is_down){
+				int new_buffer_text_index = g_console_buffer_index - 1;
+				if(new_buffer_text_index < 0){
+					new_buffer_text_index = 0;
+				}
+				g_console_buffer_index = new_buffer_text_index;
+				g_console_text_buffer[g_console_buffer_index] = '\0';
+			}
+
+			// Clearing the console buffer
+			if(return_key_is_down && !return_key_was_down){
+				if(g_console_text_buffer){
+					g_console_text_buffer[0] = '\0';
+				}
+			}
+		}
+		return_key_was_down = return_key_is_down;
 
 		// quitting app
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
@@ -235,8 +268,6 @@ void render_graphics(SDL_Window** window){
 		render_entity(entity_to_render);
 	}
 
-	// TODO(Rick): Render console as a simple quad with some transparency on the bottom of the screen and its width scales to the window's width
-	// TODO(Rick): make console quad show transparency
 	if(g_console_is_open){
 		render_console();
 	}
@@ -333,5 +364,5 @@ void render_console(){
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
 	
-	// render the internal text after
+	// TODO(Rick): render the internal text after
 }
