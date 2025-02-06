@@ -32,6 +32,7 @@ float g_console_vertices[] = {
 };
 char* g_console_text_buffer = NULL;
 int g_console_buffer_index = 0;
+TTF_Font* g_console_text_font = NULL;
 
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
@@ -111,6 +112,13 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 		return 0;
 	}
 	RLOGGER_INFO("%s", "Initialized TTF");
+
+	g_console_text_font = TTF_OpenFont("C:\\Windows\\Fonts\\arial.ttf", 12);
+	if(g_console_text_font == NULL){
+		RLOGGER_ERROR("TTF_OpenFont(): %s", TTF_GetError());
+		return 0;
+	}
+	RLOGGER_INFO("%s", "Succesfully opened arial.ttf");
 
 	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if(!(*window)){
@@ -220,9 +228,8 @@ void handle_input(SDL_Window* window){
 
 			// Clearing the console buffer
 			if(return_key_is_down && !return_key_was_down){
-				if(g_console_text_buffer){
-					g_console_text_buffer[0] = '\0';
-				}
+				memset(g_console_text_buffer, 0, g_console_buffer_index);
+				g_console_buffer_index = 0;
 			}
 		}
 		return_key_was_down = return_key_is_down;
@@ -287,6 +294,9 @@ void quit_app(SDL_Window** window, SDL_GLContext* gl_context) {
 
 	shader_delete(g_shader_id);
 	RLOGGER_INFO("%s", "Deleted Shader");
+
+	TTF_CloseFont(g_console_text_font);
+	RLOGGER_INFO("%s", "Closed console text font");
 
 	TTF_Quit();
 	RLOGGER_INFO("%s", "Quit SDL_TTF");
@@ -355,9 +365,6 @@ void render_entity(rEntity* entity){
 }
 
 void render_console(){
-	float console_width = 0.0f;
-	float console_height = 0.0f;
-
 	// render the quad first
 	shader_use(g_console_shader);
 	vao_bind(&g_console_vao_id);
@@ -365,4 +372,19 @@ void render_console(){
 	vao_unbind();
 	
 	// TODO(Rick): render the internal text after
+	render_console_text(g_console_text_buffer, g_console_buffer_index);
+}
+
+void render_console_text(char* text, int text_length){
+	float g_console_text_vertices[] = {
+		//x      y      z
+		-1.00f, -1.00f, 0.00f, // bottom - left
+		 1.00f, -1.00f, 0.00f, // bottom - right
+		-1.00f, -0.90f, 0.00f, // top - left
+		-1.00f, -0.90f, 0.00f, // top - left
+		 1.00f, -1.00f, 0.00f, // bottom - right
+		 1.00f, -0.90f, 0.00f  // top - right
+	};
+
+
 }
