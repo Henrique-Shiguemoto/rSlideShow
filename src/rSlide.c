@@ -376,13 +376,14 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 		SDL_FlipSurfaceVertical(alpha_image);
 
 		texture_set_data(&text_result.texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 1);
-		SDL_FreeSurface(alpha_image);
 		
+		SDL_FreeSurface(alpha_image);
 		RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
    	} else {
    		RLOGGER_WARN("Failed to create SDL Surface for: %s", text);
    		return text_result;
    	}
+   	SDL_FreeSurface(text_surface);
    	TTF_CloseFont(font);
 
    	float width_norm  = (float)text_surface->w / global_state.window_width;
@@ -409,7 +410,7 @@ rText rtext_create(const char* text, float x, float y, int font_size, unsigned i
 
 	vao_create(&text_result.vao_id);
 	vao_bind(&text_result.vao_id);
-	vbo_create(&text_result.vbo_id, vertex, sizeof(vertex));
+	vbo_create(&text_result.vbo_id, vertex, sizeof(vertex), 0);
 	vao_define_vbo_layout(&text_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&text_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
 
@@ -482,7 +483,7 @@ rImage rimage_create(const char* filepath, float x, float y, float width, float 
 	
 	vao_create(&img_result.vao_id);
 	vao_bind(&img_result.vao_id);
-	vbo_create(&img_result.vbo_id, vertex, sizeof(vertex));
+	vbo_create(&img_result.vbo_id, vertex, sizeof(vertex), 0);
 	vao_define_vbo_layout(&img_result.vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&img_result.vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
 

@@ -22,17 +22,31 @@ unsigned int g_console_vao_id = 0;
 unsigned int g_console_vbo_id = 0;
 unsigned int g_console_shader = 0;
 float g_console_vertices[] = {
-	//x      y      z
-	-1.00f, -1.00f, 0.00f, // bottom - left
-	 1.00f, -1.00f, 0.00f, // bottom - right
-	-1.00f, -0.90f, 0.00f, // top - left
-	-1.00f, -0.90f, 0.00f, // top - left
-	 1.00f, -1.00f, 0.00f, // bottom - right
-	 1.00f, -0.90f, 0.00f  // top - right
+	//x     y     z
+	-1.0f, -1.0f, 0.0f, // bottom - left
+	 1.0f, -1.0f, 0.0f, // bottom - right
+	-1.0f, -0.9f, 0.0f, // top - left
+	-1.0f, -0.9f, 0.0f, // top - left
+	 1.0f, -1.0f, 0.0f, // bottom - right
+	 1.0f, -0.9f, 0.0f  // top - right
 };
+
 char* g_console_text_buffer = NULL;
-int g_console_buffer_index = 0;
+int g_console_text_buffer_index = 0;
 TTF_Font* g_console_text_font = NULL;
+int g_console_text_needs_to_be_rerendered = 0;
+unsigned int g_console_text_vao_id = 0;
+unsigned int g_console_text_vbo_id = 0;
+unsigned int g_console_text_texture_id = 0;
+float g_console_text_vertices[] = {
+	//x      y      z
+	-1.00f, -1.00f, 0.00f, 0.0f, 0.0f, // bottom - left
+	-1.00f, -1.00f, 0.00f, 1.0f, 0.0f, // bottom - right
+	-1.00f, -0.90f, 0.00f, 0.0f, 1.0f, // top - left
+	-1.00f, -0.90f, 0.00f, 0.0f, 1.0f, // top - left
+	-1.00f, -1.00f, 0.00f, 1.0f, 0.0f, // bottom - right
+	-1.00f, -0.90f, 0.00f, 1.0f, 1.0f  // top - right
+};
 
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
@@ -56,15 +70,26 @@ int main(void){
 		g_app_running = 0;
 	}
 
-	vao_create(&g_console_vao_id);
-	vao_bind(&g_console_vao_id);
-	vbo_create(&g_console_vbo_id, g_console_vertices, sizeof(g_console_vertices));
-	vao_define_vbo_layout(&g_console_vbo_id, 0, 3, 3 * sizeof(float), 0); // positions
 	g_console_shader = shader_create("shaders/console.vs", "shaders/console.fs");
 	if(g_console_shader == 0) {
 		RLOGGER_ERROR("%s", "Couldn't create shader");
 		g_app_running = 0;
 	}
+
+	// Setting up buffers for console quad
+	vao_create(&g_console_vao_id);
+	vao_bind(&g_console_vao_id);
+	vbo_create(&g_console_vbo_id, g_console_vertices, sizeof(g_console_vertices), 0);
+	vao_define_vbo_layout(&g_console_vbo_id, 0, 3, 3 * sizeof(float), 0); // positions
+	
+	// Setting up buffers for console text
+	texture_create(&g_console_text_texture_id);
+	vao_create(&g_console_text_vao_id);
+	vao_bind(&g_console_text_vao_id);
+	vbo_create(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices), 1);
+	vao_define_vbo_layout(&g_console_text_vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
+	vao_define_vbo_layout(&g_console_text_vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
+
 	
 	while(g_app_running){
 		handle_input(window);
@@ -180,76 +205,79 @@ void handle_input(SDL_Window* window){
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		const unsigned char* keyboard_state = SDL_GetKeyboardState(NULL);
-
-		// input for transitioning slides
 		char left_arrow_is_down = keyboard_state[SDL_SCANCODE_LEFT];
 		char right_arrow_is_down = keyboard_state[SDL_SCANCODE_RIGHT];
-		if(left_arrow_is_down && !left_arrow_was_down){
-			int new_slide_index = g_slide_index - 1;
-			if(new_slide_index < 0) { new_slide_index = 0; }
-			g_slide_index = new_slide_index;
-		}else if(right_arrow_is_down && !right_arrow_was_down){
-			int new_slide_index = g_slide_index + 1;
-			if(new_slide_index >= global_state.slide_count) { new_slide_index = global_state.slide_count - 1; }
-			g_slide_index = new_slide_index;
-		}
-		left_arrow_was_down = left_arrow_is_down;
-		right_arrow_was_down = right_arrow_is_down;
-
-		// handling console toggle by pressing the ESCAPE key
+		char f_key_is_down = keyboard_state[SDL_SCANCODE_F];
 		char escape_key_is_down = keyboard_state[SDL_SCANCODE_ESCAPE];
-		if(escape_key_is_down && !escape_key_was_down){
-			g_console_is_open = !g_console_is_open;
-		}
-		escape_key_was_down = escape_key_is_down;
-
-		// handling text input when console is opened
 		char return_key_is_down = keyboard_state[SDL_SCANCODE_RETURN];
 		char backspace_key_is_down = keyboard_state[SDL_SCANCODE_BACKSPACE];
-		if(g_console_is_open){
-			// Appending characters to console buffer
-			if(event.type == SDL_TEXTINPUT){
-				int string_length = rs_length(event.text.text);
-				int amount_left = global_state.console_text_buffer_max_size - g_console_buffer_index + 1;
-				if(string_length > amount_left){ string_length = amount_left; }
-				memcpy(g_console_text_buffer + g_console_buffer_index, event.text.text, string_length);
-				g_console_buffer_index += string_length;
-			}
-
-			// Popping characters from console buffer
-			if(backspace_key_is_down){
-				int new_buffer_text_index = g_console_buffer_index - 1;
-				if(new_buffer_text_index < 0){
-					new_buffer_text_index = 0;
-				}
-				g_console_buffer_index = new_buffer_text_index;
-				g_console_text_buffer[g_console_buffer_index] = '\0';
-			}
-
-			// Clearing the console buffer
-			if(return_key_is_down && !return_key_was_down){
-				memset(g_console_text_buffer, 0, g_console_buffer_index);
-				g_console_buffer_index = 0;
-			}
-		}
-		return_key_was_down = return_key_is_down;
 
 		// quitting app
 		if(event.type == SDL_QUIT) { g_app_running = 0; }
 
-		// handling fullscreen toggle by pressing the F key
-		char f_key_is_down = keyboard_state[SDL_SCANCODE_F];
-		if(f_key_is_down && !f_key_was_down){
-			window_is_fullscreen = !window_is_fullscreen;
-			int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-			if(fullscreen_toggle_result < 0){
-				RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
-			}
+		// handling console toggle by pressing the ESCAPE key
+		if(escape_key_is_down && !escape_key_was_down){
+			g_console_is_open = !g_console_is_open;
 		}
+
+		// handling text input when console is opened
+		if(g_console_is_open){
+			// Appending characters to console buffer
+			if(event.type == SDL_TEXTINPUT){
+				int string_length = rs_length(event.text.text);
+				int amount_left = global_state.console_text_buffer_max_size - g_console_text_buffer_index + 1;
+				if(string_length > amount_left){ string_length = amount_left; }
+				memcpy(g_console_text_buffer + g_console_text_buffer_index, event.text.text, string_length);
+				g_console_text_buffer_index += string_length;
+				g_console_text_needs_to_be_rerendered = 1;
+			}
+
+			// Popping characters from console buffer
+			if(backspace_key_is_down){
+				int new_buffer_text_index = g_console_text_buffer_index - 1;
+				if(new_buffer_text_index < 0){
+					new_buffer_text_index = 0;
+				}
+				g_console_text_buffer_index = new_buffer_text_index;
+				g_console_text_buffer[g_console_text_buffer_index] = '\0';
+				g_console_text_needs_to_be_rerendered = 1;
+			}
+
+			// Clearing the console buffer
+			if(return_key_is_down && !return_key_was_down){
+				memset(g_console_text_buffer, 0, g_console_text_buffer_index);
+				g_console_text_buffer_index = 0;
+				g_console_text_needs_to_be_rerendered = 1;
+			}
+		}else{
+			// input for transitioning slides
+			if(left_arrow_is_down && !left_arrow_was_down){
+				int new_slide_index = g_slide_index - 1;
+				if(new_slide_index < 0) { new_slide_index = 0; }
+				g_slide_index = new_slide_index;
+			}else if(right_arrow_is_down && !right_arrow_was_down){
+				int new_slide_index = g_slide_index + 1;
+				if(new_slide_index >= global_state.slide_count) { new_slide_index = global_state.slide_count - 1; }
+				g_slide_index = new_slide_index;
+			}
+
+			// handling fullscreen toggle by pressing the F key
+			if(f_key_is_down && !f_key_was_down){
+				window_is_fullscreen = !window_is_fullscreen;
+				int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+				if(fullscreen_toggle_result < 0){
+					RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
+				}
+			}	
+		}
+		left_arrow_was_down = left_arrow_is_down;
+		right_arrow_was_down = right_arrow_is_down;
+		return_key_was_down = return_key_is_down;
+		escape_key_was_down = escape_key_is_down;
 		f_key_was_down = f_key_is_down;
 
 		// handling window resize
-		if(event.type == SDL_WINDOWEVENT) { 
+		if(event.type == SDL_WINDOWEVENT){ 
 			if(event.window.event == SDL_WINDOWEVENT_RESIZED){
 				int w, h;
 				SDL_GetWindowSize(window, &w, &h);
@@ -371,20 +399,70 @@ void render_console(){
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
 	
-	// TODO(Rick): render the internal text after
-	render_console_text(g_console_text_buffer, g_console_buffer_index);
+	// if(g_console_text_needs_to_be_rerendered){
+		render_console_text(g_console_text_buffer, g_console_text_buffer_index);
+		// g_console_text_needs_to_be_rerendered = 0;
+	// }
 }
 
-void render_console_text(char* text, int text_length){
-	float g_console_text_vertices[] = {
-		//x      y      z
-		-1.00f, -1.00f, 0.00f, // bottom - left
-		 1.00f, -1.00f, 0.00f, // bottom - right
-		-1.00f, -0.90f, 0.00f, // top - left
-		-1.00f, -0.90f, 0.00f, // top - left
-		 1.00f, -1.00f, 0.00f, // bottom - right
-		 1.00f, -0.90f, 0.00f  // top - right
-	};
+// TODO(Rick): Figure out what is going on with the vertex coords and texture coords, they're weird in RenderDoc
+void render_console_text(const char* text, int text_length){
+	if(text_length == 0){
+		g_console_text_vertices[0]  = -1.0f;
+		g_console_text_vertices[5]  = -1.0f;
+		g_console_text_vertices[10] = -1.0f;
+		g_console_text_vertices[15] = -1.0f;
+		g_console_text_vertices[20] = -1.0f;
+		g_console_text_vertices[25] = -1.0f;
+		vbo_set(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices));
+	}else if(text_length > 0){
+		// white color for now
+		// creating a texture off of text
+		// TODO(Rick): Use wrapped version TTF_RenderText_Solid()
+		// TTF_RenderText_Solid_Wrapped(g_console_text_font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(0xFF0000FF)}, global_state.window_width);
+		SDL_Surface* console_text_surface = TTF_RenderText_Solid(g_console_text_font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(0xFFFFFFFF)});
+		if (console_text_surface) {
+			SDL_Surface* alpha_image = SDL_CreateRGBSurface(SDL_SWSURFACE, console_text_surface->w, console_text_surface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+			SDL_BlitSurface(console_text_surface, NULL, alpha_image, NULL);
+			SDL_FlipSurfaceVertical(alpha_image);
 
+			texture_set_data(&g_console_text_texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 0);
+			SDL_FreeSurface(alpha_image);
+			RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
+	   	} else {
+	   		RLOGGER_WARN("Failed to create SDL Surface for: %s", text);
+	   	}
+	   	SDL_FreeSurface(console_text_surface);
 
+	   	float width_norm  = (float)console_text_surface->w / global_state.window_width;
+	   	float height_norm = (float)console_text_surface->h / global_state.window_height;
+		g_console_text_vertices[0]  = -1.00f; 				g_console_text_vertices[1]  = -1.00f;  g_console_text_vertices[2]  = 0.00f; // left - bottom
+		g_console_text_vertices[5]  = -1.00f + width_norm; 	g_console_text_vertices[6]  = -1.00f;  g_console_text_vertices[7]  = 0.00f; // right - bottom
+		g_console_text_vertices[10] = -1.00f; 				g_console_text_vertices[11] = -0.90f;  g_console_text_vertices[12] = 0.00f; // left - top
+		g_console_text_vertices[15] = -1.00f; 				g_console_text_vertices[16] = -0.90f;  g_console_text_vertices[17] = 0.00f; // left - top
+		g_console_text_vertices[20] = -1.00f + width_norm; 	g_console_text_vertices[21] = -1.00f;  g_console_text_vertices[22] = 0.00f; // right - bottom
+		g_console_text_vertices[25] = -1.00f + width_norm; 	g_console_text_vertices[26] = -0.90f;  g_console_text_vertices[27] = 0.00f; // right - top
+
+		RLOGGER_INFO("Vertices for: %s", text);
+		RLOGGER_INFO("%s", "g_console_text_vertices[] = {");
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[0],   g_console_text_vertices[1],   g_console_text_vertices[2],   g_console_text_vertices[3],  g_console_text_vertices[4]);
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[5],   g_console_text_vertices[6],   g_console_text_vertices[7],   g_console_text_vertices[8],  g_console_text_vertices[9]);
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[10],  g_console_text_vertices[11],  g_console_text_vertices[12],  g_console_text_vertices[13], g_console_text_vertices[14]);
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[15],  g_console_text_vertices[16],  g_console_text_vertices[17],  g_console_text_vertices[18], g_console_text_vertices[19]);
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[20],  g_console_text_vertices[21],  g_console_text_vertices[22],  g_console_text_vertices[23], g_console_text_vertices[24]);
+		RLOGGER_INFO("\t%f, %f, %f, %f, %f",  g_console_text_vertices[25],  g_console_text_vertices[26],  g_console_text_vertices[27],  g_console_text_vertices[28], g_console_text_vertices[29]);
+		RLOGGER_INFO("%s", "}");
+
+		vbo_set(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices));
+	}else{
+		RLOGGER_ERROR("%s", "wHaAaAaAaAaAaT");
+	}
+
+	// rendering the text as a texture quad
+	shader_use(g_shader_id);
+	texture_bind(&g_console_text_texture_id);
+	vao_bind(&g_console_text_vao_id);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	vao_unbind();
+	texture_unbind();
 }

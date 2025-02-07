@@ -5,6 +5,7 @@
 - [X] Layering
 - [ ] Add TUI with simple commands for slide creation and editing
 - [ ] Batch Rendering
+- [ ] Create release build
 - [ ] Add a release build on Github
 - [ ] Support Linux
 - [ ] Compile the app on different compilers (clang and MSCV)

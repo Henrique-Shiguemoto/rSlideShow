@@ -1,7 +1,6 @@
 #version 330 core
 out vec4 outputColor;
 
-void main()
-{
+void main() {
     outputColor = vec4(0.0, 0.0, 0.0, 0.8);
 }
