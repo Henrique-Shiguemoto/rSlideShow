@@ -17,10 +17,12 @@ int g_shader_id = 0;
 
 char g_console_is_open = 0;
 
+unsigned int g_quad_shader = 0;
+
+// TODO(Rick): refactor main.c entirely
 // TODO(Rick): refactor console variables
 unsigned int g_console_vao_id = 0;
 unsigned int g_console_vbo_id = 0;
-unsigned int g_console_shader = 0;
 float g_console_vertices[] = {
 	//x     y     z
 	-1.0f, -1.0f, 0.0f, // bottom - left
@@ -31,12 +33,10 @@ float g_console_vertices[] = {
 	 1.0f, -0.9f, 0.0f  // top - right
 };
 
-// TODO(Rick): Start the g_console_text_buffer with the characters '>' and ' ', and g_console_text_buffer_index should start at 2
-// TODO(Rick): Implement some commands for console, no command history yet
 char* g_console_text_buffer = NULL;
 int g_console_text_buffer_index = 0;
 TTF_Font* g_console_text_font = NULL;
-int g_console_text_needs_to_be_rerendered = 0;
+int g_console_needs_to_be_rerendered = 0;
 unsigned int g_console_text_vao_id = 0;
 unsigned int g_console_text_vbo_id = 0;
 unsigned int g_console_text_texture_id = 0;
@@ -49,6 +49,23 @@ float g_console_text_vertices[] = {
 	-1.00f, -1.00f, 0.00f, 1.0f, 0.0f, // bottom - right
 	-1.00f, -0.90f, 0.00f, 1.0f, 1.0f  // top - right
 };
+
+unsigned int g_console_cursor_vao_id = 0;
+unsigned int g_console_cursor_vbo_id = 0;
+float g_console_cursor[] = {
+	//x     y     z
+	-1.0f, -1.0f, 0.0f, // bottom - left
+	 1.0f, -1.0f, 0.0f, // bottom - right
+	-1.0f,  1.0f, 0.0f, // top - left
+	-1.0f,  1.0f, 0.0f, // top - left
+	 1.0f, -1.0f, 0.0f, // bottom - right
+	 1.0f,  1.0f, 0.0f  // top - right
+};
+// top left corner
+float g_default_x_cursor = -1.0f;
+float g_default_y_cursor = -0.9f;
+float x_cursor_pos = -1.0f;
+float y_cursor_pos = -0.9f;
 
 int main(void){
 	rLogger_init(RLOG_TERMINAL_MODE);
@@ -72,8 +89,8 @@ int main(void){
 		g_app_running = 0;
 	}
 
-	g_console_shader = shader_create("shaders/console.vs", "shaders/console.fs");
-	if(g_console_shader == 0) {
+	g_quad_shader = shader_create("shaders/quad.vs", "shaders/quad.fs");
+	if(g_quad_shader == 0) {
 		RLOGGER_ERROR("%s", "Couldn't create shader");
 		g_app_running = 0;
 	}
@@ -92,6 +109,12 @@ int main(void){
 	vao_define_vbo_layout(&g_console_text_vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&g_console_text_vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
 	
+	// Setting up buffers for console cursor
+	vao_create(&g_console_cursor_vao_id);
+	vao_bind(&g_console_cursor_vao_id);
+	vbo_create(&g_console_cursor_vbo_id, g_console_cursor, sizeof(g_console_cursor), 1);
+	vao_define_vbo_layout(&g_console_cursor_vbo_id, 0, 3, 3 * sizeof(float), 0); // positions
+
 	while(g_app_running){
 		handle_input(window);
 
@@ -229,7 +252,7 @@ void handle_input(SDL_Window* window){
 				if(string_length > amount_left){ string_length = amount_left; }
 				memcpy(g_console_text_buffer + g_console_text_buffer_index, event.text.text, string_length);
 				g_console_text_buffer_index += string_length;
-				g_console_text_needs_to_be_rerendered = 1;
+				g_console_needs_to_be_rerendered = 1;
 			}
 
 			// Popping characters from console buffer
@@ -240,14 +263,29 @@ void handle_input(SDL_Window* window){
 				}
 				g_console_text_buffer_index = new_buffer_text_index;
 				g_console_text_buffer[g_console_text_buffer_index] = '\0';
-				g_console_text_needs_to_be_rerendered = 1;
+				g_console_needs_to_be_rerendered = 1;
 			}
 
 			// Clearing the console buffer
 			if(return_key_is_down && !return_key_was_down){
+				rs_string command = rs_create(g_console_text_buffer);
+
+				if(rs_compare_to_cstr(&command, "quit")){
+					g_app_running = 0;
+				}else if(rs_compare_to_cstr(&command, "fullscreen")){
+					// TODO(Rick): Copy pasted code, refactor?
+					window_is_fullscreen = !window_is_fullscreen;
+					int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+					if(fullscreen_toggle_result < 0){
+						RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
+					}
+					g_console_needs_to_be_rerendered = 1;	
+				}
+
+				rs_delete(&command);
 				memset(g_console_text_buffer, 0, g_console_text_buffer_index);
 				g_console_text_buffer_index = 0;
-				g_console_text_needs_to_be_rerendered = 1;
+				g_console_needs_to_be_rerendered = 1;
 			}
 		}else{
 			// input for transitioning slides
@@ -263,12 +301,13 @@ void handle_input(SDL_Window* window){
 
 			// handling fullscreen toggle by pressing the F key
 			if(f_key_is_down && !f_key_was_down){
+				// TODO(Rick): Copy pasted code, refactor?
 				window_is_fullscreen = !window_is_fullscreen;
 				int fullscreen_toggle_result = SDL_SetWindowFullscreen(window, window_is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 				if(fullscreen_toggle_result < 0){
 					RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
 				}
-				g_console_text_needs_to_be_rerendered = 1;
+				g_console_needs_to_be_rerendered = 1;
 			}	
 		}
 		left_arrow_was_down = left_arrow_is_down;
@@ -394,23 +433,24 @@ void render_entity(rEntity* entity){
 }
 
 void render_console(){
+	if(g_console_needs_to_be_rerendered){
+		update_console_quad_and_text_quad(g_console_text_buffer, g_console_text_buffer_index, &x_cursor_pos, &y_cursor_pos);
+		g_console_needs_to_be_rerendered = 0;
+	}
+
 	// render the quad first
-	shader_use(g_console_shader);
+	shader_use(g_quad_shader);
+	shader_set_mat4_uniform(g_quad_shader, "model_matrix", rm_identity_mat4f());
+	shader_set_vec4_uniform(g_quad_shader, "quad_color", (rm_v4f){COLOR_HEX_TO_FLOATS(0x000000CC)});
 	vao_bind(&g_console_vao_id);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
 	
 	render_console_text(g_console_text_buffer, g_console_text_buffer_index);
-
-	// TODO(Rick): Render a cursor
+	render_console_cursor(x_cursor_pos, y_cursor_pos);
 }
 
 void render_console_text(const char* text, int text_length){
-	if(g_console_text_needs_to_be_rerendered){
-		update_console_text_quad(g_console_text_buffer, g_console_text_buffer_index);
-		g_console_text_needs_to_be_rerendered = 0;
-	}
-
 	// rendering the text as a texture quad
 	shader_use(g_shader_id);
 	texture_bind(&g_console_text_texture_id);
@@ -420,8 +460,29 @@ void render_console_text(const char* text, int text_length){
 	texture_unbind();
 }
 
-void update_console_text_quad(const char* text, int text_length){
+void update_console_quad_and_text_quad(const char* text, int text_length, float* out_x_cursor_pos, float* out_y_cursor_pos){
 	if(text_length == 0){
+		// setting console vertices back to default
+		// left - bottom
+		// g_console_vertices[0] = -1.0f;
+	   	// g_console_vertices[1] = -1.0f;
+		// // right - bottom
+	   	// g_console_vertices[3] = 1.0f;
+	   	// g_console_vertices[4] = -1.0f;
+		// // left - top
+	   	// g_console_vertices[6] = -1.0f;
+	   	// g_console_vertices[7] = -0.9f;
+		// // left - top
+	   	// g_console_vertices[9] = -1.0f;
+	   	// g_console_vertices[10] = -0.9f;
+		// // right - bottom
+	   	// g_console_vertices[12] = 1.0f;
+	   	// g_console_vertices[13] = -1.0f;
+		// // right - top
+	   	// g_console_vertices[15] = 1.0f;
+	   	// g_console_vertices[16] = -0.9f;
+	   	// vbo_set(&g_console_vbo_id, g_console_vertices, sizeof(g_console_vertices));
+
 		// quad with 0 width
 		g_console_text_vertices[0]  = -1.0f;
 		g_console_text_vertices[5]  = -1.0f;
@@ -430,11 +491,13 @@ void update_console_text_quad(const char* text, int text_length){
 		g_console_text_vertices[20] = -1.0f;
 		g_console_text_vertices[25] = -1.0f;
 		vbo_set(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices));
+
+		*out_x_cursor_pos = g_default_x_cursor;
+		*out_y_cursor_pos = g_default_y_cursor;
 	}else if(text_length > 0){
 		// white color for now
 		// creating a texture off of text
 		// TODO(Rick): Use wrapped version TTF_RenderText_Solid()
-		// TTF_RenderText_Solid_Wrapped(g_console_text_font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(0xFF0000FF)}, global_state.window_width);
 		SDL_Surface* console_text_surface = TTF_RenderText_Solid(g_console_text_font, text, (SDL_Color){COLOR_HEX_TO_UINT8s(0xFFFFFFFF)});
 		if (console_text_surface) {
 			SDL_Surface* alpha_image = SDL_CreateRGBSurface(SDL_SWSURFACE, console_text_surface->w, console_text_surface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
@@ -443,7 +506,7 @@ void update_console_text_quad(const char* text, int text_length){
 
 			texture_set_data(&g_console_text_texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 1);
 			SDL_FreeSurface(alpha_image);
-			RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
+			// RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
 	   	} else {
 	   		RLOGGER_WARN("Failed to create SDL Surface for: %s", text);
 	   	}
@@ -451,15 +514,82 @@ void update_console_text_quad(const char* text, int text_length){
 
 	   	float width_norm  = (float)console_text_surface->w / global_state.window_width;
 	   	float height_norm = (float)console_text_surface->h / global_state.window_height;
-		g_console_text_vertices[0]  = -0.98f; 						g_console_text_vertices[1]  = -1.00f;  g_console_text_vertices[2]  = 0.00f; // left - bottom
-		g_console_text_vertices[5]  = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[6]  = -1.00f;  g_console_text_vertices[7]  = 0.00f; // right - bottom
-		g_console_text_vertices[10] = -0.98f; 						g_console_text_vertices[11] = -0.92f;  g_console_text_vertices[12] = 0.00f; // left - top
-		g_console_text_vertices[15] = -0.98f; 						g_console_text_vertices[16] = -0.92f;  g_console_text_vertices[17] = 0.00f; // left - top
-		g_console_text_vertices[20] = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[21] = -1.00f;  g_console_text_vertices[22] = 0.00f; // right - bottom
-		g_console_text_vertices[25] = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[26] = -0.92f;  g_console_text_vertices[27] = 0.00f; // right - top
+
+	   	// updating the console vertices, it might change when text wraps
+	   	// left - bottom
+	   	// g_console_vertices[0] = -1.0f;
+	   	// g_console_vertices[1] = -1.0f;
+		// // right - bottom
+	   	// g_console_vertices[3] = 1.0f;
+	   	// g_console_vertices[4] = -1.0f;
+		// // left - top
+	   	// g_console_vertices[6] = -1.0f;
+	   	// g_console_vertices[7] = -1.0f + 0.1f;
+		// // left - top
+	   	// g_console_vertices[9] = -1.0f;
+	   	// g_console_vertices[10] = -1.0f + 0.1f;
+		// // right - bottom
+	   	// g_console_vertices[12] = 1.0f;
+	   	// g_console_vertices[13] = -1.0f;
+		// // right - top
+	   	// g_console_vertices[15] = 1.0f;
+	   	// g_console_vertices[16] = -1.0f + 0.1f;
+	   	// vbo_set(&g_console_vbo_id, g_console_vertices, sizeof(g_console_vertices));
+
+		// left - bottom
+		g_console_text_vertices[0]  = g_console_vertices[0] * 0.98f;
+		g_console_text_vertices[1]  = g_console_vertices[1];
+		g_console_text_vertices[2]  = 0.00f;
+		// right - bottom
+		g_console_text_vertices[5]  = g_console_vertices[0] * 0.98f + 2.0f * width_norm;
+		g_console_text_vertices[6]  = g_console_vertices[4];
+		g_console_text_vertices[7]  = 0.00f;
+		// left - top
+		g_console_text_vertices[10] = g_console_vertices[6] * 0.98f;
+		g_console_text_vertices[11] = g_console_vertices[7] - height_norm;
+		g_console_text_vertices[12] = 0.00f;
+		// left - top
+		g_console_text_vertices[15] = g_console_vertices[9] * 0.98f;
+		g_console_text_vertices[16] = g_console_vertices[10] - height_norm;
+		g_console_text_vertices[17] = 0.00f;
+		// right - bottom
+		g_console_text_vertices[20] = g_console_vertices[0] * 0.98f + 2.0f * width_norm;
+		g_console_text_vertices[21] = g_console_vertices[13];
+		g_console_text_vertices[22] = 0.00f;
+		// right - top
+		g_console_text_vertices[25] = g_console_vertices[0] * 0.98f + 2.0f * width_norm;
+		g_console_text_vertices[26] = g_console_vertices[16] - height_norm;
+		g_console_text_vertices[27] = 0.00f;
 
 		vbo_set(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices));
+
+		*out_x_cursor_pos = g_console_text_vertices[25] + (0.05f * global_state.window_width) / global_state.window_width;
+		*out_y_cursor_pos = g_default_y_cursor - (0.05f * global_state.window_height) / global_state.window_height;
 	}else{
 		RLOGGER_ERROR("%s", "wHaAaAaAaAaAaT");
 	}
+}
+
+void render_console_cursor(float x, float y){
+	rm_v3f cursor_pos = (rm_v3f){x, y, 0.0f};
+	rm_mat4f identity = rm_identity_mat4f();
+	rm_mat4f pos_translated = rm_mult_mat4f(
+		identity, 
+		rm_translation_3D(cursor_pos)
+	);
+
+	rm_v3f cursor_scale = (rm_v3f){0.01f, 0.05f, 0.0f};
+	rm_mat4f pos_scaled = rm_mult_mat4f(
+		pos_translated,
+		rm_scaling_3D(cursor_scale)
+	);
+
+	rm_mat4f pos_final = rm_transpose_mat4f(pos_scaled);
+
+	shader_use(g_quad_shader);
+	shader_set_mat4_uniform(g_quad_shader, "model_matrix", pos_final);
+	shader_set_vec4_uniform(g_quad_shader, "quad_color", (rm_v4f){COLOR_HEX_TO_FLOATS(0x00FF00FF)});
+	vao_bind(&g_console_cursor_vao_id);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	vao_unbind();
 }

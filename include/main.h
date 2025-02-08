@@ -27,7 +27,8 @@ void render_graphics(SDL_Window** window);
 void render_entity(rEntity* entity);
 void render_console();
 void render_console_text(const char* text, int text_length);
-void update_console_text_quad(const char* text, int text_length);
+void update_console_quad_and_text_quad(const char* text, int text_length, float* out_x_cursor_pos, float* out_y_cursor_pos);
+void render_console_cursor(float x, float y); // x and y in NDC [-1, 1]
 void render_image_as_quad(rImage* image);
 void render_text_as_quad(rText* text);
 void quit_app(SDL_Window** window, SDL_GLContext* gl_context);
