@@ -31,6 +31,8 @@ float g_console_vertices[] = {
 	 1.0f, -0.9f, 0.0f  // top - right
 };
 
+// TODO(Rick): Start the g_console_text_buffer with the characters '>' and ' ', and g_console_text_buffer_index should start at 2
+// TODO(Rick): Implement some commands for console, no command history yet
 char* g_console_text_buffer = NULL;
 int g_console_text_buffer_index = 0;
 TTF_Font* g_console_text_font = NULL;
@@ -89,7 +91,6 @@ int main(void){
 	vbo_create(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices), 1);
 	vao_define_vbo_layout(&g_console_text_vbo_id, 0, 3, 5 * sizeof(float), 0); // positions
 	vao_define_vbo_layout(&g_console_text_vbo_id, 1, 2, 5 * sizeof(float), 3); // uvs
-
 	
 	while(g_app_running){
 		handle_input(window);
@@ -115,8 +116,7 @@ int main(void){
 		double virtual_delta_time_us = (virtual_delta_ticks * 1000000) / g_performance_frequency;
 		double virtual_delta_time_ms = virtual_delta_time_us / 1000;
 		double virtual_fps = 1000.0 / virtual_delta_time_ms;
-		// RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
-		RLOGGER_INFO("%s", g_console_text_buffer);
+		RLOGGER_INFO("Delta Time (ms): %lf (%lf FPS RAW) - Virtual Delta Time (ms): %lf (%lf FPS VIRTUAL)", delta_time_ms, raw_fps, virtual_delta_time_ms, virtual_fps);
 	}
 
 	quit_app(&window, &context);
@@ -138,12 +138,12 @@ int init_app(SDL_Window** window, int width, int height, SDL_GLContext* gl_conte
 	}
 	RLOGGER_INFO("%s", "Initialized TTF");
 
-	g_console_text_font = TTF_OpenFont("C:\\Windows\\Fonts\\arial.ttf", 12);
+	g_console_text_font = TTF_OpenFont("C:\\Windows\\Fonts\\consolab.ttf", (int)(0.03f * global_state.window_height));
 	if(g_console_text_font == NULL){
 		RLOGGER_ERROR("TTF_OpenFont(): %s", TTF_GetError());
 		return 0;
 	}
-	RLOGGER_INFO("%s", "Succesfully opened arial.ttf");
+	RLOGGER_INFO("%s", "Succesfully opened consolab.ttf");
 
 	*window = SDL_CreateWindow(global_state.app_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, global_state.window_width, global_state.window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if(!(*window)){
@@ -268,6 +268,7 @@ void handle_input(SDL_Window* window){
 				if(fullscreen_toggle_result < 0){
 					RLOGGER_ERROR("Failed to toggle fullscreen mode with SDL_SetWindowFullscreen(): %s", SDL_GetError());
 				}
+				g_console_text_needs_to_be_rerendered = 1;
 			}	
 		}
 		left_arrow_was_down = left_arrow_is_down;
@@ -399,15 +400,29 @@ void render_console(){
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	vao_unbind();
 	
-	// if(g_console_text_needs_to_be_rerendered){
-		render_console_text(g_console_text_buffer, g_console_text_buffer_index);
-		// g_console_text_needs_to_be_rerendered = 0;
-	// }
+	render_console_text(g_console_text_buffer, g_console_text_buffer_index);
+
+	// TODO(Rick): Render a cursor
 }
 
-// TODO(Rick): Figure out what is going on with the vertex coords and texture coords, they're weird in RenderDoc
 void render_console_text(const char* text, int text_length){
+	if(g_console_text_needs_to_be_rerendered){
+		update_console_text_quad(g_console_text_buffer, g_console_text_buffer_index);
+		g_console_text_needs_to_be_rerendered = 0;
+	}
+
+	// rendering the text as a texture quad
+	shader_use(g_shader_id);
+	texture_bind(&g_console_text_texture_id);
+	vao_bind(&g_console_text_vao_id);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	vao_unbind();
+	texture_unbind();
+}
+
+void update_console_text_quad(const char* text, int text_length){
 	if(text_length == 0){
+		// quad with 0 width
 		g_console_text_vertices[0]  = -1.0f;
 		g_console_text_vertices[5]  = -1.0f;
 		g_console_text_vertices[10] = -1.0f;
@@ -426,7 +441,7 @@ void render_console_text(const char* text, int text_length){
 			SDL_BlitSurface(console_text_surface, NULL, alpha_image, NULL);
 			SDL_FlipSurfaceVertical(alpha_image);
 
-			texture_set_data(&g_console_text_texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 0);
+			texture_set_data(&g_console_text_texture_id, alpha_image->pixels, alpha_image->w, alpha_image->h, 1);
 			SDL_FreeSurface(alpha_image);
 			RLOGGER_INFO("Succesfully created SDL_Surface for: %s", text);
 	   	} else {
@@ -436,33 +451,15 @@ void render_console_text(const char* text, int text_length){
 
 	   	float width_norm  = (float)console_text_surface->w / global_state.window_width;
 	   	float height_norm = (float)console_text_surface->h / global_state.window_height;
-		g_console_text_vertices[0]  = -1.00f; 				g_console_text_vertices[1]  = -1.00f;  g_console_text_vertices[2]  = 0.00f; // left - bottom
-		g_console_text_vertices[5]  = -1.00f + width_norm; 	g_console_text_vertices[6]  = -1.00f;  g_console_text_vertices[7]  = 0.00f; // right - bottom
-		g_console_text_vertices[10] = -1.00f; 				g_console_text_vertices[11] = -0.90f;  g_console_text_vertices[12] = 0.00f; // left - top
-		g_console_text_vertices[15] = -1.00f; 				g_console_text_vertices[16] = -0.90f;  g_console_text_vertices[17] = 0.00f; // left - top
-		g_console_text_vertices[20] = -1.00f + width_norm; 	g_console_text_vertices[21] = -1.00f;  g_console_text_vertices[22] = 0.00f; // right - bottom
-		g_console_text_vertices[25] = -1.00f + width_norm; 	g_console_text_vertices[26] = -0.90f;  g_console_text_vertices[27] = 0.00f; // right - top
-
-		RLOGGER_INFO("Vertices for: %s", text);
-		RLOGGER_INFO("%s", "g_console_text_vertices[] = {");
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[0],   g_console_text_vertices[1],   g_console_text_vertices[2],   g_console_text_vertices[3],  g_console_text_vertices[4]);
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[5],   g_console_text_vertices[6],   g_console_text_vertices[7],   g_console_text_vertices[8],  g_console_text_vertices[9]);
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[10],  g_console_text_vertices[11],  g_console_text_vertices[12],  g_console_text_vertices[13], g_console_text_vertices[14]);
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[15],  g_console_text_vertices[16],  g_console_text_vertices[17],  g_console_text_vertices[18], g_console_text_vertices[19]);
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f,", g_console_text_vertices[20],  g_console_text_vertices[21],  g_console_text_vertices[22],  g_console_text_vertices[23], g_console_text_vertices[24]);
-		RLOGGER_INFO("\t%f, %f, %f, %f, %f",  g_console_text_vertices[25],  g_console_text_vertices[26],  g_console_text_vertices[27],  g_console_text_vertices[28], g_console_text_vertices[29]);
-		RLOGGER_INFO("%s", "}");
+		g_console_text_vertices[0]  = -0.98f; 						g_console_text_vertices[1]  = -1.00f;  g_console_text_vertices[2]  = 0.00f; // left - bottom
+		g_console_text_vertices[5]  = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[6]  = -1.00f;  g_console_text_vertices[7]  = 0.00f; // right - bottom
+		g_console_text_vertices[10] = -0.98f; 						g_console_text_vertices[11] = -0.92f;  g_console_text_vertices[12] = 0.00f; // left - top
+		g_console_text_vertices[15] = -0.98f; 						g_console_text_vertices[16] = -0.92f;  g_console_text_vertices[17] = 0.00f; // left - top
+		g_console_text_vertices[20] = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[21] = -1.00f;  g_console_text_vertices[22] = 0.00f; // right - bottom
+		g_console_text_vertices[25] = -0.98f + 2.0f * width_norm; 	g_console_text_vertices[26] = -0.92f;  g_console_text_vertices[27] = 0.00f; // right - top
 
 		vbo_set(&g_console_text_vbo_id, g_console_text_vertices, sizeof(g_console_text_vertices));
 	}else{
 		RLOGGER_ERROR("%s", "wHaAaAaAaAaAaT");
 	}
-
-	// rendering the text as a texture quad
-	shader_use(g_shader_id);
-	texture_bind(&g_console_text_texture_id);
-	vao_bind(&g_console_text_vao_id);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	vao_unbind();
-	texture_unbind();
 }
